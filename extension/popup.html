@@ -7,41 +7,84 @@
     <link rel="stylesheet" href="popup.css">
   </head>
   <body>
-    <main class="popup">
-      <header class="header">
-        <h1>TrustTrace AI</h1>
-        <p>Explainable URL risk check</p>
+    <main class="popup" aria-live="polite">
+      <header class="app-header">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">TT</div>
+          <div>
+            <h1>TrustTrace AI</h1>
+            <p>Explainable browser threat analysis</p>
+          </div>
+        </div>
+
+        <span class="status-pill checking" id="backend-status">
+          <span class="status-dot"></span>
+          Checking
+        </span>
       </header>
 
-      <section class="current-url">
-        <span class="label">Current tab</span>
-        <p id="current-url">Loading current tab...</p>
+      <section class="glass-card url-card" aria-labelledby="current-tab-label">
+        <div class="section-topline">
+          <span class="eyebrow" id="current-tab-label">Current tab</span>
+          <button class="icon-button" id="copy-url" type="button" title="Copy current URL" aria-label="Copy current URL">
+            Copy
+          </button>
+        </div>
+        <p class="url-text" id="current-url">Loading current tab...</p>
       </section>
 
-      <section class="result" id="result" hidden>
-        <div class="risk-row">
-          <div>
-            <span class="label">Risk level</span>
-            <strong id="risk-level">-</strong>
-          </div>
-          <div>
-            <span class="label">Trust score</span>
-            <strong id="trust-score">-</strong>
-          </div>
+      <section class="glass-card loading-card" id="loading-state">
+        <div class="scanner" aria-hidden="true">
+          <span></span>
         </div>
-
-        <div class="probability">
-          <span class="label">Phishing probability</span>
-          <strong id="phishing-probability">-</strong>
-        </div>
-
         <div>
-          <span class="label">Reasons</span>
-          <ul id="reasons"></ul>
+          <strong>Scanning</strong>
+          <p id="status">Analyzing URL signals...</p>
         </div>
       </section>
 
-      <p class="status" id="status">Analyzing...</p>
+      <section class="glass-card result-card" id="result" hidden>
+        <div class="score-grid">
+          <div class="score-meter" id="score-meter" style="--score-percent: 0%; --risk-color: #2dd4bf;">
+            <div class="score-inner">
+              <span id="trust-score">0</span>
+              <small>/100</small>
+            </div>
+          </div>
+
+          <div class="risk-summary">
+            <span class="risk-badge low" id="risk-level">Low Risk</span>
+            <p id="risk-message">Looks safe based on current checks.</p>
+          </div>
+        </div>
+
+        <div class="probability-section">
+          <div class="section-topline">
+            <span class="eyebrow">Phishing probability</span>
+            <strong id="phishing-probability">0%</strong>
+          </div>
+          <div class="progress-track" aria-hidden="true">
+            <span class="progress-fill low" id="probability-bar"></span>
+          </div>
+        </div>
+
+        <div class="reasons-section">
+          <div class="section-topline">
+            <span class="eyebrow">Explainable signals</span>
+          </div>
+          <div class="reason-list" id="reasons"></div>
+        </div>
+      </section>
+
+      <section class="glass-card error-card" id="error-state" hidden>
+        <strong>Backend unavailable</strong>
+        <p>Backend unavailable. Start the FastAPI server and try again.</p>
+      </section>
+
+      <footer class="actions">
+        <button class="primary-button" id="rescan" type="button">Rescan</button>
+        <button class="secondary-button" id="copy-report" type="button" disabled>Copy Report</button>
+      </footer>
     </main>
 
     <script src="popup.js"></script>
