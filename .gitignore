@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# Node and browser tooling
+node_modules/
+dist/
+build/
+
+# OS and editors
+.DS_Store
+.idea/
+.vscode/
+
+# ML artifacts
+*.pkl
+*.joblib
+*.onnx
+ml/data/raw/*
+ml/data/processed/*
+ml/saved_models/*
+
+!.gitkeep

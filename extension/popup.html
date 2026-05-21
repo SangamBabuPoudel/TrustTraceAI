@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TrustTrace AI</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main class="popup">
+      <header class="header">
+        <h1>TrustTrace AI</h1>
+        <p>Explainable URL risk check</p>
+      </header>
+
+      <section class="current-url">
+        <span class="label">Current tab</span>
+        <p id="current-url">Loading current tab...</p>
+      </section>
+
+      <section class="result" id="result" hidden>
+        <div class="risk-row">
+          <div>
+            <span class="label">Risk level</span>
+            <strong id="risk-level">-</strong>
+          </div>
+          <div>
+            <span class="label">Trust score</span>
+            <strong id="trust-score">-</strong>
+          </div>
+        </div>
+
+        <div class="probability">
+          <span class="label">Phishing probability</span>
+          <strong id="phishing-probability">-</strong>
+        </div>
+
+        <div>
+          <span class="label">Reasons</span>
+          <ul id="reasons"></ul>
+        </div>
+      </section>
+
+      <p class="status" id="status">Analyzing...</p>
+    </main>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
