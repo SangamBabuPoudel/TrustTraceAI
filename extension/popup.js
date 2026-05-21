@@ -1,4 +1,5 @@
-const API_URL = "http://127.0.0.1:8000/api/analyze-url";
+const API_URL = "http://127.0.0.1:8000/api/analyze-page";
+const MAX_VISIBLE_TEXT_LENGTH = 5000;
 
 const RISK_MESSAGES = {
   low: "Looks safe based on current checks.",
@@ -37,13 +38,38 @@ async function getCurrentTab() {
   return tab;
 }
 
-async function analyzeUrl(url) {
+async function collectPageContent(tab) {
+  if (!tab?.id) {
+    return {
+      page_title: tab?.title || "",
+      visible_text: ""
+    };
+  }
+
+  try {
+    const pageContent = await chrome.tabs.sendMessage(tab.id, {
+      type: "TRUSTTRACE_COLLECT_PAGE"
+    });
+
+    return {
+      page_title: pageContent?.pageTitle || tab?.title || "",
+      visible_text: (pageContent?.visibleText || "").slice(0, MAX_VISIBLE_TEXT_LENGTH)
+    };
+  } catch (error) {
+    return {
+      page_title: tab?.title || "",
+      visible_text: ""
+    };
+  }
+}
+
+async function analyzePage(payload) {
   const response = await fetch(API_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ url })
+    body: JSON.stringify(payload)
   });
 
   if (!response.ok) {
@@ -65,7 +91,7 @@ function showLoading() {
   errorStateElement.hidden = true;
   resultElement.hidden = true;
   loadingStateElement.hidden = false;
-  statusElement.textContent = "Analyzing URL signals...";
+  statusElement.textContent = "Analyzing URL and page content signals...";
 }
 
 function showError(title, message, backendStatus = "offline") {
@@ -110,30 +136,74 @@ function animateTrustScore(score, riskLevel) {
   requestAnimationFrame(step);
 }
 
-function renderReasons(reasons, riskLevel) {
+function createReasonCard(reason, riskLevel, index) {
+  const reasonCard = document.createElement("div");
+  reasonCard.className = `reason-card ${riskLevel}`;
+  reasonCard.style.animationDelay = `${index * 45}ms`;
+
+  const icon = document.createElement("span");
+  icon.className = "reason-icon";
+  icon.textContent = riskLevel === "low" ? "OK" : "!";
+
+  const text = document.createElement("span");
+  text.textContent = reason;
+
+  reasonCard.append(icon, text);
+  return reasonCard;
+}
+
+function createReasonGroup(title, reasons, riskLevel, startIndex) {
+  const group = document.createElement("div");
+  group.className = "reason-group";
+
+  const heading = document.createElement("span");
+  heading.className = "reason-group-title";
+  heading.textContent = title;
+  group.appendChild(heading);
+
+  reasons.forEach((reason, index) => {
+    group.appendChild(createReasonCard(reason, riskLevel, startIndex + index));
+  });
+
+  return group;
+}
+
+function renderReasons(result, riskLevel) {
   reasonsElement.innerHTML = "";
 
   const safeReason =
     "No obvious phishing indicators were found by the MVP checks.";
+  const urlSignals = result.signals?.url_signals || [];
+  const contentSignals = result.signals?.content_signals || [];
+  const hasGroupedSignals = urlSignals.length > 0 || contentSignals.length > 0;
+
+  if (hasGroupedSignals) {
+    let animationIndex = 0;
+
+    if (urlSignals.length > 0) {
+      reasonsElement.appendChild(
+        createReasonGroup("URL signals", urlSignals, riskLevel, animationIndex)
+      );
+      animationIndex += urlSignals.length;
+    }
+
+    if (contentSignals.length > 0) {
+      reasonsElement.appendChild(
+        createReasonGroup("Page content signals", contentSignals, riskLevel, animationIndex)
+      );
+    }
+
+    return;
+  }
+
+  const reasons = result.reasons || [];
   const normalizedReasons =
     reasons.length === 1 && reasons[0].includes("No obvious phishing indicators")
       ? [safeReason]
       : reasons;
 
   normalizedReasons.forEach((reason, index) => {
-    const reasonCard = document.createElement("div");
-    reasonCard.className = `reason-card ${riskLevel}`;
-    reasonCard.style.animationDelay = `${index * 45}ms`;
-
-    const icon = document.createElement("span");
-    icon.className = "reason-icon";
-    icon.textContent = riskLevel === "low" ? "OK" : "!";
-
-    const text = document.createElement("span");
-    text.textContent = reason;
-
-    reasonCard.append(icon, text);
-    reasonsElement.appendChild(reasonCard);
+    reasonsElement.appendChild(createReasonCard(reason, riskLevel, index));
   });
 }
 
@@ -162,7 +232,7 @@ function renderResult(result) {
   });
 
   animateTrustScore(trustScore, riskLevel);
-  renderReasons(result.reasons || [], riskLevel);
+  renderReasons(result, riskLevel);
 }
 
 async function scanCurrentUrl() {
@@ -183,7 +253,12 @@ async function scanCurrentUrl() {
       return;
     }
 
-    const result = await analyzeUrl(currentTabUrl);
+    const pageContent = await collectPageContent(tab);
+    const result = await analyzePage({
+      url: currentTabUrl,
+      page_title: pageContent.page_title,
+      visible_text: pageContent.visible_text
+    });
     renderResult(result);
   } catch (error) {
     showError(
@@ -211,6 +286,12 @@ function buildReport() {
   const reasons = latestResult?.reasons?.length
     ? latestResult.reasons.join("\n- ")
     : "None";
+  const urlSignals = latestResult?.signals?.url_signals?.length
+    ? latestResult.signals.url_signals.join("\n- ")
+    : "None";
+  const contentSignals = latestResult?.signals?.content_signals?.length
+    ? latestResult.signals.content_signals.join("\n- ")
+    : "None";
 
   return `TrustTrace AI Scan Report
 URL: ${latestResult?.url || currentTabUrl}
@@ -218,7 +299,11 @@ Risk Level: ${latestResult?.risk_level || "Unavailable"}
 Trust Score: ${latestResult?.trust_score ?? "Unavailable"}
 Phishing Probability: ${Math.round((latestResult?.phishing_probability || 0) * 100)}%
 Reasons:
-- ${reasons}`;
+- ${reasons}
+URL Signals:
+- ${urlSignals}
+Page Content Signals:
+- ${contentSignals}`;
 }
 
 rescanButton.addEventListener("click", scanCurrentUrl);

@@ -2,7 +2,7 @@
 
 TrustTrace AI is an explainable browser security extension for detecting phishing websites, scam links, fake login forms, suspicious emails/messages, malicious URLs, OCR screenshot scams, and dark patterns.
 
-This repository currently contains a clean local MVP foundation. It uses a Chrome Extension Manifest V3 popup and a FastAPI backend with simple rule-based URL analysis. Machine learning and threat intelligence APIs are intentionally not included yet.
+This repository currently contains a clean local MVP foundation. It uses a Chrome Extension Manifest V3 popup and a FastAPI backend with simple rule-based URL and visible page content analysis. Machine learning and threat intelligence APIs are intentionally not included yet.
 
 ## Problem Statement
 
@@ -10,11 +10,13 @@ Phishing and scam websites often rely on small signals that users can miss: inse
 
 ## Key Features
 
-- Chrome extension popup that reads the current tab URL.
+- Chrome extension popup that reads the current tab URL and visible page text.
 - Local FastAPI backend.
 - `GET /health` endpoint.
 - `POST /api/analyze-url` endpoint.
+- `POST /api/analyze-page` endpoint.
 - Rule-based URL risk detection.
+- Rule-based page content scam signal detection.
 - Explainable reasons for detected risk signals.
 - Beginner-readable modular code.
 
@@ -31,7 +33,8 @@ Phishing and scam websites often rely on small signals that users can miss: inse
 
 Included:
 
-- URL-only analysis.
+- URL analysis.
+- Visible page content analysis.
 - Local-only backend.
 - Rule-based risk scoring.
 - Explainable output.
@@ -43,7 +46,6 @@ Not included yet:
 - Threat intelligence APIs.
 - Screenshot OCR.
 - Email/message analysis.
-- Page content analysis.
 - Production deployment.
 
 ## Folder Structure
@@ -67,6 +69,7 @@ TrustTraceAI/
         url_feature_extractor.py
         risk_scoring_engine.py
         explanation_engine.py
+        page_content_analyzer.py
       models/
         schemas.py
     requirements.txt
@@ -114,6 +117,14 @@ curl -X POST http://127.0.0.1:8000/api/analyze-url \
   -d '{"url":"http://secure-login-bank.example.com/verify/account"}'
 ```
 
+Analyze a page:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/analyze-page \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com","page_title":"Example Domain","visible_text":"Example visible page text"}'
+```
+
 ### Chrome Extension
 
 1. Open Chrome and go to `chrome://extensions`.
@@ -126,7 +137,7 @@ curl -X POST http://127.0.0.1:8000/api/analyze-url \
 ## Roadmap
 
 - Phase 1: Clean MVP foundation.
-- Phase 2: Browser page and login form analysis.
+- Phase 2: Page content scanning and browser page analysis.
 - Phase 3: Email and message scam detection.
 - Phase 4: OCR screenshot scam analysis.
 - Phase 5: Machine learning experiments.

@@ -10,6 +10,8 @@
 
 ## Phase 2: Browser Page Analysis
 
+- Add MVP page content scanning for visible webpage text.
+- Combine URL risk and content risk into one explainable score.
 - Detect suspicious login forms.
 - Identify password fields on insecure pages.
 - Flag visual impersonation patterns.
