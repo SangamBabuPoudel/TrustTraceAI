@@ -51,3 +51,19 @@ Response:
 - Excessive hyphens in the hostname.
 - Too many subdomains.
 - `@` symbol in the URL.
+
+### Local Development URLs
+
+During MVP testing, local development hosts are treated as safe development URLs and skip phishing risk scoring. This includes `localhost`, `127.0.0.1`, `0.0.0.0`, and `::1`.
+
+Example response:
+
+```json
+{
+  "url": "http://127.0.0.1:8000/health",
+  "risk_level": "low",
+  "phishing_probability": 0.0,
+  "trust_score": 100,
+  "reasons": ["Local development URL detected; phishing risk scoring skipped."]
+}
+```

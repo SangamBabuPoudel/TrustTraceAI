@@ -15,6 +15,7 @@ SUSPICIOUS_KEYWORDS = {
 }
 
 IP_ADDRESS_PATTERN = re.compile(r"^(?:\d{1,3}\.){3}\d{1,3}$")
+LOCAL_DEVELOPMENT_HOSTS = {"localhost", "127.0.0.1", "0.0.0.0", "::1"}
 
 
 @dataclass(frozen=True)
@@ -32,11 +33,13 @@ class UrlFeatures:
     subdomain_count: int
     has_many_subdomains: bool
     has_at_symbol: bool
+    is_local_development: bool
 
 
 def extract_url_features(url: str) -> UrlFeatures:
     parsed_url = urlparse(url)
     hostname = parsed_url.hostname or ""
+    normalized_hostname = hostname.lower()
     normalized_url = url.lower()
 
     suspicious_keywords = sorted(
@@ -61,4 +64,5 @@ def extract_url_features(url: str) -> UrlFeatures:
         subdomain_count=subdomain_count,
         has_many_subdomains=subdomain_count >= 3,
         has_at_symbol="@" in url,
+        is_local_development=normalized_hostname in LOCAL_DEVELOPMENT_HOSTS,
     )

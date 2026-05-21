@@ -11,6 +11,13 @@ class RiskScore:
 
 
 def score_url_risk(features: UrlFeatures) -> RiskScore:
+    if features.is_local_development:
+        return RiskScore(
+            risk_level="low",
+            phishing_probability=0.0,
+            trust_score=100,
+        )
+
     points = 0
 
     if features.uses_http:

@@ -2,6 +2,9 @@ from app.services.url_feature_extractor import UrlFeatures
 
 
 def build_explanations(features: UrlFeatures) -> list[str]:
+    if features.is_local_development:
+        return ["Local development URL detected; phishing risk scoring skipped."]
+
     reasons: list[str] = []
 
     if features.uses_http:
