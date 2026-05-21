@@ -50,13 +50,13 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
             page_url=url,
             forms=payload.forms,
             has_suspicious_url=False,
-            has_suspicious_content=content_analysis.risk_score >= 30,
+            has_suspicious_content=content_analysis.has_account_verification_language,
         )
         combined_points = _combine_local_content_and_form_scores(
             content_score=content_analysis.risk_score,
             form_score=form_analysis.risk_score,
             has_password_form=form_analysis.has_password_form,
-            has_suspicious_content=content_analysis.risk_score >= 30,
+            has_suspicious_content=content_analysis.has_account_verification_language,
         )
         reasons = (
             [local_development_reason]
@@ -74,7 +74,7 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
             trust_score=max(100 - combined_points, 0),
             reasons=reasons,
             signals=AnalyzePageSignals(
-                url_signals=[local_development_reason],
+                url_signals=[],
                 content_signals=content_analysis.reasons,
                 form_signals=form_analysis.reasons,
             ),
@@ -86,7 +86,7 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
         page_url=url,
         forms=payload.forms,
         has_suspicious_url=bool(url_reasons),
-        has_suspicious_content=content_analysis.risk_score >= 30,
+        has_suspicious_content=content_analysis.has_account_verification_language,
     )
 
     combined_points = _combine_url_content_and_form_scores(
@@ -95,7 +95,7 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
         form_score=form_analysis.risk_score,
         has_password_form=form_analysis.has_password_form,
         has_suspicious_url=bool(url_reasons),
-        has_suspicious_content=content_analysis.risk_score >= 30,
+        has_suspicious_content=content_analysis.has_account_verification_language,
     )
     phishing_probability = round(combined_points / 100, 2)
     trust_score = max(100 - combined_points, 0)
@@ -162,7 +162,11 @@ def _combine_local_content_and_form_scores(
     has_password_form: bool,
     has_suspicious_content: bool,
 ) -> int:
-    combined_points = round((content_score * 0.55) + (form_score * 0.45))
+    combined_points = max(
+        content_score,
+        form_score,
+        round((content_score * 0.50) + (form_score * 0.50)),
+    )
     return _add_password_form_bonus(
         combined_points=combined_points,
         has_password_form=has_password_form,

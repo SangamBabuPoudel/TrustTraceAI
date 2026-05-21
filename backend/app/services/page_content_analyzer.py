@@ -14,6 +14,7 @@ class ContentAnalysis:
     risk_score: int
     reasons: list[str]
     signals: list[str]
+    has_account_verification_language: bool
 
 
 CONTENT_RULES = (
@@ -77,10 +78,16 @@ def analyze_page_content(page_title: str, visible_text: str) -> ContentAnalysis:
         signals.append(rule.name)
         reasons.append(f"{rule.explanation} Matched term(s): {matched_terms}.")
 
+    combo_score, combo_reasons, combo_signals = _analyze_content_combinations(signals)
+    risk_score += combo_score
+    reasons.extend(combo_reasons)
+    signals.extend(combo_signals)
+
     return ContentAnalysis(
         risk_score=min(risk_score, 100),
         reasons=reasons,
         signals=signals,
+        has_account_verification_language=_has_account_verification_language(signals),
     )
 
 
@@ -90,3 +97,46 @@ def _normalize_text(text: str) -> str:
 
 def _find_keyword_matches(text: str, keywords: tuple[str, ...]) -> list[str]:
     return sorted(keyword for keyword in keywords if keyword in text)
+
+
+def _analyze_content_combinations(signals: list[str]) -> tuple[int, list[str], list[str]]:
+    signal_set = set(signals)
+    combo_score = 0
+    combo_reasons: list[str] = []
+    combo_signals: list[str] = []
+
+    account_warning_combo = {
+        "urgent_language",
+        "account_threat_language",
+        "credential_language",
+    }
+    security_fear_combo = {
+        "urgent_language",
+        "credential_language",
+        "fear_language",
+    }
+
+    if account_warning_combo.issubset(signal_set):
+        combo_score += 25
+        combo_signals.append("urgent_account_verification_combo")
+        combo_reasons.append(
+            "The page combines urgent language, account-threat language, and credential verification language."
+        )
+
+    if security_fear_combo.issubset(signal_set):
+        combo_score += 20
+        combo_signals.append("security_fear_credential_combo")
+        combo_reasons.append(
+            "The page combines security-alert language with credential requests and urgency."
+        )
+
+    return combo_score, combo_reasons, combo_signals
+
+
+def _has_account_verification_language(signals: list[str]) -> bool:
+    signal_set = set(signals)
+    return bool(
+        {"account_threat_language", "credential_language"}.issubset(signal_set)
+        or "urgent_account_verification_combo" in signal_set
+        or "security_fear_credential_combo" in signal_set
+    )

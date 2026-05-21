@@ -195,28 +195,34 @@ Example local page response:
     "The page mentions account restrictions or unusual activity. Matched term(s): suspended.",
     "The page asks about credentials or identity verification. Matched term(s): password, verify.",
     "The page uses fear-based security language to create urgency. Matched term(s): security alert, your account will be closed.",
+    "The page combines urgent language, account-threat language, and credential verification language.",
+    "The page combines security-alert language with credential requests and urgency.",
     "Form 1: A password field was detected.",
     "Form 1: An email or username field was detected.",
+    "Form 1: The form asks for both an email or username and a password.",
     "Form 1: The form action is missing, which can make destination behavior unclear.",
     "Form 1: The submit button uses suspicious action word(s): verify.",
-    "Form 1: A password field was detected on a page with suspicious account-verification language."
+    "Form 1: The form contains 1 hidden input(s).",
+    "Form 1: A password field was detected on a page with suspicious account-verification or security-alert language."
   ],
   "signals": {
-    "url_signals": [
-      "Local development URL detected; URL risk scoring skipped, but page content and forms were analyzed."
-    ],
+    "url_signals": [],
     "content_signals": [
       "The page uses urgent language that may pressure users to act quickly. Matched term(s): final warning, immediately, urgent.",
       "The page mentions account restrictions or unusual activity. Matched term(s): suspended.",
       "The page asks about credentials or identity verification. Matched term(s): password, verify.",
-      "The page uses fear-based security language to create urgency. Matched term(s): security alert, your account will be closed."
+      "The page uses fear-based security language to create urgency. Matched term(s): security alert, your account will be closed.",
+      "The page combines urgent language, account-threat language, and credential verification language.",
+      "The page combines security-alert language with credential requests and urgency."
     ],
     "form_signals": [
       "Form 1: A password field was detected.",
       "Form 1: An email or username field was detected.",
+      "Form 1: The form asks for both an email or username and a password.",
       "Form 1: The form action is missing, which can make destination behavior unclear.",
       "Form 1: The submit button uses suspicious action word(s): verify.",
-      "Form 1: A password field was detected on a page with suspicious account-verification language."
+      "Form 1: The form contains 1 hidden input(s).",
+      "Form 1: A password field was detected on a page with suspicious account-verification or security-alert language."
     ]
   }
 }

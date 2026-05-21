@@ -46,7 +46,7 @@ def analyze_forms(
         form_label = f"Form {index}"
 
         if form.has_password_field:
-            risk_score += 25
+            risk_score += 30
             signals.append("password_field_present")
             reasons.append(f"{form_label}: A password field was detected.")
 
@@ -54,6 +54,13 @@ def analyze_forms(
             risk_score += 10
             signals.append("email_or_username_field_present")
             reasons.append(f"{form_label}: An email or username field was detected.")
+
+        if form.has_email_or_username_field and form.has_password_field:
+            risk_score += 30
+            signals.append("email_password_login_combo")
+            reasons.append(
+                f"{form_label}: The form asks for both an email or username and a password."
+            )
 
         if _has_missing_action(form):
             risk_score += 15
@@ -77,25 +84,25 @@ def analyze_forms(
 
         suspicious_submit_words = _find_suspicious_submit_words(form.submit_text)
         if suspicious_submit_words:
-            risk_score += 15
+            risk_score += 20
             signals.append("suspicious_submit_text")
             matched_words = ", ".join(suspicious_submit_words)
             reasons.append(
                 f"{form_label}: The submit button uses suspicious action word(s): {matched_words}."
             )
 
-        if form.hidden_input_count >= 3:
-            risk_score += 10
-            signals.append("many_hidden_inputs")
+        if form.hidden_input_count > 0:
+            risk_score += 5
+            signals.append("hidden_inputs_present")
             reasons.append(
-                f"{form_label}: The form contains {form.hidden_input_count} hidden inputs."
+                f"{form_label}: The form contains {form.hidden_input_count} hidden input(s)."
             )
 
         if form.has_password_field and has_suspicious_content:
-            risk_score += 30
+            risk_score += 45
             signals.append("password_form_with_suspicious_content")
             reasons.append(
-                f"{form_label}: A password field was detected on a page with suspicious account-verification language."
+                f"{form_label}: A password field was detected on a page with suspicious account-verification or security-alert language."
             )
 
         if form.has_password_field and has_suspicious_url:
