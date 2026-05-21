@@ -42,7 +42,8 @@ async function collectPageContent(tab) {
   if (!tab?.id) {
     return {
       page_title: tab?.title || "",
-      visible_text: ""
+      visible_text: "",
+      forms: []
     };
   }
 
@@ -53,12 +54,14 @@ async function collectPageContent(tab) {
 
     return {
       page_title: pageContent?.pageTitle || tab?.title || "",
-      visible_text: (pageContent?.visibleText || "").slice(0, MAX_VISIBLE_TEXT_LENGTH)
+      visible_text: (pageContent?.visibleText || "").slice(0, MAX_VISIBLE_TEXT_LENGTH),
+      forms: pageContent?.forms || []
     };
   } catch (error) {
     return {
       page_title: tab?.title || "",
-      visible_text: ""
+      visible_text: "",
+      forms: []
     };
   }
 }
@@ -175,7 +178,9 @@ function renderReasons(result, riskLevel) {
     "No obvious phishing indicators were found by the MVP checks.";
   const urlSignals = result.signals?.url_signals || [];
   const contentSignals = result.signals?.content_signals || [];
-  const hasGroupedSignals = urlSignals.length > 0 || contentSignals.length > 0;
+  const formSignals = result.signals?.form_signals || [];
+  const hasGroupedSignals =
+    urlSignals.length > 0 || contentSignals.length > 0 || formSignals.length > 0;
 
   if (hasGroupedSignals) {
     let animationIndex = 0;
@@ -190,6 +195,13 @@ function renderReasons(result, riskLevel) {
     if (contentSignals.length > 0) {
       reasonsElement.appendChild(
         createReasonGroup("Page content signals", contentSignals, riskLevel, animationIndex)
+      );
+      animationIndex += contentSignals.length;
+    }
+
+    if (formSignals.length > 0) {
+      reasonsElement.appendChild(
+        createReasonGroup("Form signals", formSignals, riskLevel, animationIndex)
       );
     }
 
@@ -257,7 +269,8 @@ async function scanCurrentUrl() {
     const result = await analyzePage({
       url: currentTabUrl,
       page_title: pageContent.page_title,
-      visible_text: pageContent.visible_text
+      visible_text: pageContent.visible_text,
+      forms: pageContent.forms
     });
     renderResult(result);
   } catch (error) {
@@ -292,6 +305,9 @@ function buildReport() {
   const contentSignals = latestResult?.signals?.content_signals?.length
     ? latestResult.signals.content_signals.join("\n- ")
     : "None";
+  const formSignals = latestResult?.signals?.form_signals?.length
+    ? latestResult.signals.form_signals.join("\n- ")
+    : "None";
 
   return `TrustTrace AI Scan Report
 URL: ${latestResult?.url || currentTabUrl}
@@ -303,7 +319,9 @@ Reasons:
 URL Signals:
 - ${urlSignals}
 Page Content Signals:
-- ${contentSignals}`;
+- ${contentSignals}
+Form Signals:
+- ${formSignals}`;
 }
 
 rescanButton.addEventListener("click", scanCurrentUrl);

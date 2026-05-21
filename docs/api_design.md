@@ -42,7 +42,7 @@ Response:
 
 `POST /api/analyze-page`
 
-This endpoint analyzes both the current URL and visible webpage text. For normal web URLs, URL risk contributes `60%` of the final score and page content risk contributes `40%`.
+This endpoint analyzes the current URL, visible webpage text, and login form metadata. For normal web URLs, URL risk contributes `45%` of the final score, page content risk contributes `30%`, and form risk contributes `25%`.
 
 Request:
 
@@ -50,7 +50,18 @@ Request:
 {
   "url": "https://example.com",
   "page_title": "Example Domain",
-  "visible_text": "visible page text here"
+  "visible_text": "visible page text here",
+  "forms": [
+    {
+      "action": "https://example.com/login",
+      "method": "post",
+      "has_password_field": true,
+      "has_email_or_username_field": true,
+      "input_count": 3,
+      "hidden_input_count": 1,
+      "submit_text": "Login"
+    }
+  ]
 }
 ```
 
@@ -65,7 +76,8 @@ Response:
   "reasons": ["No obvious phishing indicators were found by the MVP checks."],
   "signals": {
     "url_signals": [],
-    "content_signals": []
+    "content_signals": [],
+    "form_signals": []
   }
 }
 ```
@@ -103,6 +115,19 @@ The page analyzer scans visible webpage text and the page title for explainable 
 - Prize/scam language such as `winner`, `congratulations`, `claim reward`, and `free gift`.
 - Fear language such as `your account will be closed`, `unauthorized access`, and `security alert`.
 
+### Form Signals
+
+The form analyzer scans metadata collected by the browser extension for fake-login and credential-harvesting indicators:
+
+- Password field present.
+- Email or username field present.
+- Form submits to a different domain than the current page.
+- Form action is empty or missing.
+- Form uses HTTP instead of HTTPS.
+- Suspicious submit text such as `verify`, `confirm`, `update`, `unlock`, `secure`, and `continue`.
+- Many hidden inputs.
+- Password form appears on a suspicious URL or a page with suspicious account-verification language.
+
 ### Scoring Model
 
 The MVP scoring engine uses transparent rule weights. Each detected signal adds risk points. The final score is capped at `100`.
@@ -111,7 +136,9 @@ The MVP scoring engine uses transparent rule weights. Each detected signal adds 
 - `trust_score` is `100` minus the capped risk score.
 - `risk_level` is `low` below `30`, `medium` from `30` to `59`, and `high` at `60` or above.
 
-For `/api/analyze-page`, local development URLs skip URL risk scoring but still run page content analysis. This makes it possible to test suspicious local HTML pages served from `localhost` or `127.0.0.1`.
+For `/api/analyze-page`, local development URLs skip URL risk scoring but still run page content and form analysis. This makes it possible to test suspicious local HTML pages served from `localhost` or `127.0.0.1`.
+
+If a password form appears with suspicious content or a suspicious URL, TrustTrace AI adds an extra risk boost because that combination is common in credential-harvesting pages.
 
 ### Local Development URLs
 
@@ -131,7 +158,7 @@ Example response:
 }
 ```
 
-For `POST /api/analyze-page`, local development URLs skip URL-based scoring but still analyze `page_title` and `visible_text`. If local test page content contains phishing or scam language, the final result can still become `medium` or `high` risk based on content signals.
+For `POST /api/analyze-page`, local development URLs skip URL-based scoring but still analyze `page_title`, `visible_text`, and `forms`. If local test page content or fake login forms contain phishing indicators, the final result can still become `medium` or `high` risk.
 
 Example local page request:
 
@@ -139,7 +166,18 @@ Example local page request:
 {
   "url": "http://localhost:8000/test-phishing.html",
   "page_title": "Security Alert",
-  "visible_text": "Urgent final warning. Your account is suspended and your account will be closed. Verify your password immediately to claim reward."
+  "visible_text": "Urgent final warning. Your account is suspended and your account will be closed. Verify your password immediately.",
+  "forms": [
+    {
+      "action": "",
+      "method": "post",
+      "has_password_field": true,
+      "has_email_or_username_field": true,
+      "input_count": 3,
+      "hidden_input_count": 1,
+      "submit_text": "Verify Account"
+    }
+  ]
 }
 ```
 
@@ -149,26 +187,36 @@ Example local page response:
 {
   "url": "http://localhost:8000/test-phishing.html",
   "risk_level": "high",
-  "phishing_probability": 0.9,
-  "trust_score": 10,
+  "phishing_probability": 1.0,
+  "trust_score": 0,
   "reasons": [
-    "Local development URL detected; URL risk scoring skipped, but page content was analyzed.",
+    "Local development URL detected; URL risk scoring skipped, but page content and forms were analyzed.",
     "The page uses urgent language that may pressure users to act quickly. Matched term(s): final warning, immediately, urgent.",
     "The page mentions account restrictions or unusual activity. Matched term(s): suspended.",
     "The page asks about credentials or identity verification. Matched term(s): password, verify.",
-    "The page uses prize or reward wording commonly found in scams. Matched term(s): claim reward.",
-    "The page uses fear-based security language to create urgency. Matched term(s): security alert, your account will be closed."
+    "The page uses fear-based security language to create urgency. Matched term(s): security alert, your account will be closed.",
+    "Form 1: A password field was detected.",
+    "Form 1: An email or username field was detected.",
+    "Form 1: The form action is missing, which can make destination behavior unclear.",
+    "Form 1: The submit button uses suspicious action word(s): verify.",
+    "Form 1: A password field was detected on a page with suspicious account-verification language."
   ],
   "signals": {
     "url_signals": [
-      "Local development URL detected; URL risk scoring skipped, but page content was analyzed."
+      "Local development URL detected; URL risk scoring skipped, but page content and forms were analyzed."
     ],
     "content_signals": [
       "The page uses urgent language that may pressure users to act quickly. Matched term(s): final warning, immediately, urgent.",
       "The page mentions account restrictions or unusual activity. Matched term(s): suspended.",
       "The page asks about credentials or identity verification. Matched term(s): password, verify.",
-      "The page uses prize or reward wording commonly found in scams. Matched term(s): claim reward.",
       "The page uses fear-based security language to create urgency. Matched term(s): security alert, your account will be closed."
+    ],
+    "form_signals": [
+      "Form 1: A password field was detected.",
+      "Form 1: An email or username field was detected.",
+      "Form 1: The form action is missing, which can make destination behavior unclear.",
+      "Form 1: The submit button uses suspicious action word(s): verify.",
+      "Form 1: A password field was detected on a page with suspicious account-verification language."
     ]
   }
 }
@@ -226,4 +274,4 @@ Expected result: elevated risk because the URL includes phishing keywords, hyphe
 
 Expected result: `low` risk with risk scoring skipped for local MVP development.
 
-For `/api/analyze-page`, this same localhost URL can still become `medium` or `high` risk if the visible page text contains phishing or scam indicators.
+For `/api/analyze-page`, this same localhost URL can still become `medium` or `high` risk if the visible page text or form metadata contains phishing or credential-harvesting indicators.

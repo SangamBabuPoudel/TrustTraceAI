@@ -2,7 +2,7 @@
 
 TrustTrace AI is an explainable browser security extension for detecting phishing websites, scam links, fake login forms, suspicious emails/messages, malicious URLs, OCR screenshot scams, and dark patterns.
 
-This repository currently contains a clean local MVP foundation. It uses a Chrome Extension Manifest V3 popup and a FastAPI backend with simple rule-based URL and visible page content analysis. Machine learning and threat intelligence APIs are intentionally not included yet.
+This repository currently contains a clean local MVP foundation. It uses a Chrome Extension Manifest V3 popup and a FastAPI backend with simple rule-based URL, visible page content, and fake login form analysis. Machine learning and threat intelligence APIs are intentionally not included yet.
 
 ## Problem Statement
 
@@ -17,6 +17,7 @@ Phishing and scam websites often rely on small signals that users can miss: inse
 - `POST /api/analyze-page` endpoint.
 - Rule-based URL risk detection.
 - Rule-based page content scam signal detection.
+- Rule-based fake login form and credential-harvesting detection.
 - Explainable reasons for detected risk signals.
 - Beginner-readable modular code.
 
@@ -35,6 +36,7 @@ Included:
 
 - URL analysis.
 - Visible page content analysis.
+- Fake login form detection.
 - Local-only backend.
 - Rule-based risk scoring.
 - Explainable output.
@@ -70,6 +72,7 @@ TrustTraceAI/
         risk_scoring_engine.py
         explanation_engine.py
         page_content_analyzer.py
+        form_analyzer.py
       models/
         schemas.py
     requirements.txt
@@ -122,7 +125,7 @@ Analyze a page:
 ```bash
 curl -X POST http://127.0.0.1:8000/api/analyze-page \
   -H "Content-Type: application/json" \
-  -d '{"url":"https://example.com","page_title":"Example Domain","visible_text":"Example visible page text"}'
+  -d '{"url":"https://example.com","page_title":"Example Domain","visible_text":"Example visible page text","forms":[]}'
 ```
 
 ### Chrome Extension
@@ -137,7 +140,7 @@ curl -X POST http://127.0.0.1:8000/api/analyze-page \
 ## Roadmap
 
 - Phase 1: Clean MVP foundation.
-- Phase 2: Page content scanning and browser page analysis.
+- Phase 2: Page content scanning, fake login form detection, and browser page analysis.
 - Phase 3: Email and message scam detection.
 - Phase 4: OCR screenshot scam analysis.
 - Phase 5: Machine learning experiments.
