@@ -20,9 +20,20 @@
 
 ## Phase 3: Email and Message Safety
 
+- Add MVP email/message threat detection from selected or visible text.
+- Detect sender impersonation and brand/domain mismatches.
+- Detect suspicious links and display-text destination mismatches.
+- Track repeated similar messages locally using message hashes.
 - Analyze pasted emails or messages.
 - Detect scam language, urgency, payment pressure, and impersonation.
 - Add explainable message risk results.
+
+## Phase 3.5: Reputation And Legitimacy Pipeline
+
+- Add known threat-intelligence placeholder layer.
+- Add official domain verification and high-reputation domain checks.
+- Reduce false positives on legitimate trusted sites.
+- Add deep-analysis placeholders for URL ML, RDAP/domain age, Tranco, URLScan, and certificate reputation.
 
 ## Phase 4: OCR Screenshot Scam Analysis
 
@@ -40,6 +51,8 @@
 ## Phase 6: Threat Intelligence Integrations
 
 - Add optional threat intelligence APIs.
+- Integrate PhishTank, OpenPhish cached feeds, Google Safe Browsing, URLhaus, and VirusTotal.
+- Add Tranco rank, RDAP/domain age, URLScan.io, and certificate reputation checks.
 - Cache results responsibly.
 - Keep user privacy controls clear and explicit.
 

@@ -1,16 +1,27 @@
 from fastapi import APIRouter
 
 from app.models.schemas import (
+    AnalyzeMessageRequest,
+    AnalyzeMessageResponse,
+    AnalyzeMessageSignals,
     AnalyzePageRequest,
     AnalyzePageResponse,
     AnalyzePageSignals,
     AnalyzeUrlRequest,
     AnalyzeUrlResponse,
+    ReputationSummary,
 )
+from app.services.deep_analysis_service import analyze_url_deep
 from app.services.explanation_engine import build_explanations
 from app.services.form_analyzer import analyze_forms
+from app.services.message_analyzer import analyze_message_text
+from app.services.message_fingerprint_service import record_message_scan
+from app.services.message_link_analyzer import analyze_message_links
 from app.services.page_content_analyzer import analyze_page_content
 from app.services.risk_scoring_engine import score_url_risk
+from app.services.sender_identity_analyzer import analyze_sender_identity
+from app.services.reputation_service import ReputationResult, analyze_url_reputation
+from app.services.threat_intel_service import check_all_threat_intel
 from app.services.url_feature_extractor import extract_url_features
 
 
@@ -19,16 +30,17 @@ router = APIRouter()
 
 @router.post("/analyze-url", response_model=AnalyzeUrlResponse)
 def analyze_url(payload: AnalyzeUrlRequest) -> AnalyzeUrlResponse:
-    features = extract_url_features(str(payload.url))
-    score = score_url_risk(features)
-    reasons = build_explanations(features)
+    url_pipeline = _analyze_url_with_pipeline(str(payload.url))
 
     return AnalyzeUrlResponse(
         url=str(payload.url),
-        risk_level=score.risk_level,
-        phishing_probability=score.phishing_probability,
-        trust_score=score.trust_score,
-        reasons=reasons,
+        risk_level=url_pipeline["risk_level"],
+        phishing_probability=url_pipeline["phishing_probability"],
+        trust_score=url_pipeline["trust_score"],
+        reasons=url_pipeline["reasons"],
+        confidence=url_pipeline["confidence"],
+        trust_signals=url_pipeline["trust_signals"],
+        reputation=url_pipeline["reputation"],
     )
 
 
@@ -36,6 +48,11 @@ def analyze_url(payload: AnalyzeUrlRequest) -> AnalyzeUrlResponse:
 def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
     url = str(payload.url)
     url_features = extract_url_features(url)
+    url_pipeline = _analyze_url_with_pipeline(url)
+    trusted_context = (
+        url_pipeline["reputation"].is_official_brand_domain
+        or url_pipeline["reputation"].is_high_reputation_domain
+    )
     content_analysis = analyze_page_content(
         page_title=payload.page_title,
         visible_text=payload.visible_text,
@@ -51,6 +68,7 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
             forms=payload.forms,
             has_suspicious_url=False,
             has_suspicious_content=content_analysis.has_account_verification_language,
+            is_trusted_context=False,
         )
         combined_points = _combine_local_content_and_form_scores(
             content_score=content_analysis.risk_score,
@@ -78,45 +96,228 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
                 content_signals=content_analysis.reasons,
                 form_signals=form_analysis.reasons,
             ),
+            confidence="high" if combined_points >= 60 else "medium",
+            trust_signals=[],
+            reputation=_reputation_summary(url_pipeline["raw_reputation"]),
         )
 
-    url_score = score_url_risk(url_features)
-    url_reasons = _remove_safe_reasons(build_explanations(url_features))
     form_analysis = analyze_forms(
         page_url=url,
         forms=payload.forms,
-        has_suspicious_url=bool(url_reasons),
+        has_suspicious_url=bool(url_pipeline["reasons"]),
         has_suspicious_content=content_analysis.has_account_verification_language,
+        is_trusted_context=trusted_context,
     )
+    effective_content_score = content_analysis.risk_score
+    effective_content_reasons = content_analysis.reasons
+    if trusted_context and not content_analysis.has_account_verification_language:
+        effective_content_score = 0
+        effective_content_reasons = []
 
     combined_points = _combine_url_content_and_form_scores(
-        url_score=url_score.phishing_probability * 100,
-        content_score=content_analysis.risk_score,
+        url_score=url_pipeline["points"],
+        content_score=effective_content_score,
         form_score=form_analysis.risk_score,
         has_password_form=form_analysis.has_password_form,
-        has_suspicious_url=bool(url_reasons),
+        has_suspicious_url=bool(url_pipeline["reasons"]),
         has_suspicious_content=content_analysis.has_account_verification_language,
     )
-    phishing_probability = round(combined_points / 100, 2)
-    trust_score = max(100 - combined_points, 0)
-    risk_level = _risk_level_from_points(combined_points)
+    if trusted_context and form_analysis.risk_score == 0 and effective_content_score == 0:
+        combined_points = min(combined_points, 5)
 
-    reasons = url_reasons + content_analysis.reasons + form_analysis.reasons
+    reasons = url_pipeline["reasons"] + effective_content_reasons + form_analysis.reasons
     if not reasons:
         reasons = ["No obvious phishing indicators were found by the MVP checks."]
 
     return AnalyzePageResponse(
         url=url,
-        risk_level=risk_level,
-        phishing_probability=phishing_probability,
-        trust_score=trust_score,
+        risk_level=_risk_level_from_points(combined_points),
+        phishing_probability=round(combined_points / 100, 2),
+        trust_score=max(100 - combined_points, 0),
         reasons=reasons,
         signals=AnalyzePageSignals(
-            url_signals=url_reasons,
-            content_signals=content_analysis.reasons,
+            url_signals=url_pipeline["reasons"],
+            content_signals=effective_content_reasons,
             form_signals=form_analysis.reasons,
         ),
+        confidence=url_pipeline["confidence"],
+        trust_signals=url_pipeline["trust_signals"],
+        reputation=url_pipeline["reputation"],
     )
+
+
+@router.post("/analyze-message", response_model=AnalyzeMessageResponse)
+def analyze_message(payload: AnalyzeMessageRequest) -> AnalyzeMessageResponse:
+    message_analysis = analyze_message_text(
+        subject=payload.subject,
+        message_text=payload.message_text,
+    )
+    link_analysis = analyze_message_links(
+        links=payload.links,
+        mentioned_brands=message_analysis.mentioned_brands,
+    )
+    sender_analysis = analyze_sender_identity(
+        sender=payload.sender,
+        sender_type=payload.sender_type,
+        mentioned_brands=message_analysis.mentioned_brands,
+        has_company_or_security_claim=message_analysis.has_company_or_security_claim,
+        has_urgent_credential_request=message_analysis.has_urgent_credential_request,
+        has_suspicious_links=bool(link_analysis.reasons),
+    )
+
+    preliminary_points = _combine_message_scores(
+        message_score=message_analysis.risk_score,
+        sender_score=sender_analysis.risk_score,
+        link_score=link_analysis.risk_score,
+        repeat_score=0,
+    )
+    repeat_result = record_message_scan(
+        sender=payload.sender,
+        subject=payload.subject,
+        source_url=payload.source_url,
+        message_text=payload.message_text,
+        links=payload.links,
+        risk_level=_risk_level_from_points(preliminary_points),
+        phishing_probability=round(preliminary_points / 100, 2),
+    )
+    repeat_score = 20 if repeat_result.repeat_count > 1 else 0
+    combined_points = _combine_message_scores(
+        message_score=message_analysis.risk_score,
+        sender_score=sender_analysis.risk_score,
+        link_score=link_analysis.risk_score,
+        repeat_score=repeat_score,
+    )
+
+    if sender_analysis.risk_score >= 30 and message_analysis.has_urgent_credential_request:
+        combined_points += 15
+    if link_analysis.risk_score >= 35 and sender_analysis.risk_score >= 30:
+        combined_points += 15
+    if repeat_score and message_analysis.risk_score >= 30:
+        combined_points += 10
+
+    combined_points = min(combined_points, 100)
+    reasons = (
+        sender_analysis.reasons
+        + message_analysis.reasons
+        + link_analysis.reasons
+        + repeat_result.repeat_signals
+    )
+    if not reasons:
+        reasons = ["No obvious phishing indicators were found by the MVP message checks."]
+
+    return AnalyzeMessageResponse(
+        risk_level=_risk_level_from_points(combined_points),
+        phishing_probability=round(combined_points / 100, 2),
+        trust_score=max(100 - combined_points, 0),
+        reasons=reasons,
+        signals=AnalyzeMessageSignals(
+            sender_signals=sender_analysis.reasons,
+            message_signals=message_analysis.reasons,
+            link_signals=link_analysis.reasons,
+            repeat_signals=repeat_result.repeat_signals,
+        ),
+        repeat_count=repeat_result.repeat_count,
+        repeat_warning=repeat_result.repeat_warning,
+    )
+
+
+def _analyze_url_with_pipeline(url: str) -> dict:
+    features = extract_url_features(url)
+    reputation = analyze_url_reputation(url)
+    threat_intel_results = check_all_threat_intel(url)
+    deep_analysis = analyze_url_deep(url, reputation)
+    known_bad = any(result["is_known_bad"] for result in threat_intel_results)
+
+    if features.is_local_development:
+        return {
+            "points": 0,
+            "risk_level": "low",
+            "phishing_probability": 0.0,
+            "trust_score": 100,
+            "reasons": ["Local development URL detected; phishing risk scoring skipped."],
+            "confidence": "high",
+            "trust_signals": [],
+            "reputation": _reputation_summary(reputation),
+            "raw_reputation": reputation,
+        }
+
+    base_score = score_url_risk(features)
+    points = round(base_score.phishing_probability * 100)
+    reasons = _remove_safe_reasons(build_explanations(features))
+    trust_signals = list(reputation.trust_signals)
+
+    if known_bad:
+        points = 100
+        reasons.insert(0, "Known bad URL match from configured threat intelligence.")
+    else:
+        reasons.extend(deep_analysis.reasons)
+        points = max(points, deep_analysis.risk_score)
+
+        has_fake_brand = bool(reputation.reputation_warnings)
+        has_credential_context = bool(
+            set(features.suspicious_keywords)
+            & {"login", "verify", "account", "secure", "update", "password", "bank"}
+        )
+        if has_fake_brand and has_credential_context:
+            points = max(points, 85)
+        elif has_fake_brand:
+            points = max(points, 60)
+        if features.suspicious_tld and has_credential_context:
+            points = max(points, 70)
+
+        trusted_domain = reputation.is_official_brand_domain or reputation.is_high_reputation_domain
+        strong_url_evidence = any(
+            [
+                features.has_at_symbol,
+                features.has_ip_address,
+                features.suspicious_tld,
+                bool(reputation.reputation_warnings),
+            ]
+        )
+        if trusted_domain and not strong_url_evidence:
+            weak_reasons = [
+                reason
+                for reason in reasons
+                if "HTTP instead of" in reason or "IP address" in reason or "@" in reason
+            ]
+            reasons = weak_reasons
+            points = min(points, 5 if features.scheme == "https" else 20)
+
+    points = min(points, 100)
+    trusted_domain = reputation.is_official_brand_domain or reputation.is_high_reputation_domain
+    if points <= 5 and trust_signals and trusted_domain:
+        reasons = []
+    elif not reasons and points > 0:
+        reasons = ["Multiple weak URL signals were found."]
+
+    return {
+        "points": points,
+        "risk_level": _risk_level_from_points(points),
+        "phishing_probability": round(points / 100, 2),
+        "trust_score": max(100 - points, 0),
+        "reasons": reasons,
+        "confidence": _confidence_for_url(points, reputation, known_bad),
+        "trust_signals": trust_signals,
+        "reputation": _reputation_summary(reputation),
+        "raw_reputation": reputation,
+    }
+
+
+def _reputation_summary(reputation: ReputationResult) -> ReputationSummary:
+    return ReputationSummary(
+        is_official_brand_domain=reputation.is_official_brand_domain,
+        is_high_reputation_domain=reputation.is_high_reputation_domain,
+        matched_brand=reputation.matched_brand,
+        reputation_score=reputation.reputation_score,
+    )
+
+
+def _confidence_for_url(points: int, reputation: ReputationResult, known_bad: bool) -> str:
+    if known_bad or points >= 70 or reputation.is_official_brand_domain or reputation.is_high_reputation_domain:
+        return "high"
+    if points >= 30:
+        return "medium"
+    return "low"
 
 
 def _risk_level_from_points(points: int) -> str:
@@ -185,3 +386,20 @@ def _add_password_form_bonus(
         combined_points += 20
 
     return min(combined_points, 100)
+
+
+def _combine_message_scores(
+    message_score: int,
+    sender_score: int,
+    link_score: int,
+    repeat_score: int,
+) -> int:
+    return min(
+        round(
+            (message_score * 0.35)
+            + (sender_score * 0.25)
+            + (link_score * 0.30)
+            + (repeat_score * 0.10)
+        ),
+        100,
+    )

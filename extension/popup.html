@@ -43,6 +43,18 @@
         </div>
       </section>
 
+      <section class="glass-card message-card" aria-labelledby="message-scan-label">
+        <div class="section-topline">
+          <span class="eyebrow" id="message-scan-label">Email / message scan</span>
+        </div>
+        <label class="sender-label" for="sender-input">Sender email or phone number</label>
+        <input id="sender-input" class="sender-input" type="text" placeholder="Optional sender">
+        <p class="privacy-note">Only selected or visible text is scanned. Do not scan sensitive personal content unless you choose to.</p>
+        <div class="message-preview" id="message-preview" hidden></div>
+        <div class="nearby-threats" id="nearby-threats" hidden></div>
+        <button class="secondary-button wide-button" id="scan-message" type="button">Scan Email/Message</button>
+      </section>
+
       <section class="glass-card result-card" id="result" hidden>
         <div class="score-grid">
           <div class="score-meter" id="score-meter" style="--score-percent: 0%; --risk-color: #2dd4bf;">
@@ -67,6 +79,8 @@
             <span class="progress-fill low" id="probability-bar"></span>
           </div>
         </div>
+
+        <p class="repeat-note" id="repeat-note" hidden></p>
 
         <div class="reasons-section">
           <div class="section-topline">

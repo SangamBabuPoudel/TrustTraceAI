@@ -34,7 +34,15 @@ Response:
   "risk_level": "low",
   "phishing_probability": 0.0,
   "trust_score": 100,
-  "reasons": []
+  "reasons": [],
+  "confidence": "low",
+  "trust_signals": [],
+  "reputation": {
+    "is_official_brand_domain": false,
+    "is_high_reputation_domain": false,
+    "matched_brand": "",
+    "reputation_score": 50
+  }
 }
 ```
 
@@ -65,20 +73,60 @@ Request:
 }
 ```
 
+## Analyze Message
+
+`POST /api/analyze-message`
+
+This endpoint analyzes user-selected or visible message text. It is designed for user-controlled scans from Gmail, Outlook Web, LinkedIn messages, Facebook messages, SMS-style pages, or any browser page. It does not connect to email provider APIs.
+
+Request:
+
+```json
+{
+  "source_url": "https://mail.google.com/",
+  "subject": "Account Security Alert",
+  "sender": "google.security.alert@gmail.com",
+  "sender_type": "email",
+  "message_text": "Your Google account has been suspended due to unusual activity. Verify your password immediately to avoid account closure.",
+  "links": [
+    {
+      "text": "Google Login",
+      "href": "http://secure-google-login.example.com/verify"
+    }
+  ]
+}
+```
+
 Response:
 
 ```json
 {
-  "url": "https://example.com",
-  "risk_level": "low",
-  "phishing_probability": 0.0,
-  "trust_score": 100,
-  "reasons": ["No obvious phishing indicators were found by the MVP checks."],
+  "risk_level": "high",
+  "phishing_probability": 1.0,
+  "trust_score": 0,
+  "reasons": [
+    "The sender uses a personal/free email provider while claiming to represent Google.",
+    "The message uses urgent language. Matched term(s): immediately.",
+    "The message uses account-suspension or account-threat language. Matched term(s): suspended, unusual activity.",
+    "The message asks for password, login, or security-code verification. Matched term(s): password, verify.",
+    "The displayed link text mentions Google, but the actual destination is not google.com."
+  ],
   "signals": {
-    "url_signals": [],
-    "content_signals": [],
-    "form_signals": []
-  }
+    "sender_signals": [
+      "The sender uses a personal/free email provider while claiming to represent Google."
+    ],
+    "message_signals": [
+      "The message uses urgent language. Matched term(s): immediately.",
+      "The message uses account-suspension or account-threat language. Matched term(s): suspended, unusual activity.",
+      "The message asks for password, login, or security-code verification. Matched term(s): password, verify."
+    ],
+    "link_signals": [
+      "The displayed link text mentions Google, but the actual destination is not google.com."
+    ],
+    "repeat_signals": []
+  },
+  "repeat_count": 1,
+  "repeat_warning": null
 }
 ```
 
@@ -128,13 +176,60 @@ The form analyzer scans metadata collected by the browser extension for fake-log
 - Many hidden inputs.
 - Password form appears on a suspicious URL or a page with suspicious account-verification language.
 
+### Message Signals
+
+The message analyzer scans subject and message text for:
+
+- Urgency such as `urgent`, `immediately`, `act now`, `final warning`, `limited time`, and `respond now`.
+- Account threats such as `suspended`, `locked`, `disabled`, `restricted`, `unusual activity`, `account closure`, and `account will be closed`.
+- Credential requests such as `password`, `login`, `verify`, `confirm identity`, `security code`, `authentication code`, `one-time code`, and `OTP`.
+- Payment/refund/invoice scams such as `refund`, `payment failed`, `invoice`, `billing`, `bank account`, `card declined`, and `transaction failed`.
+- Prize scams such as `congratulations`, `winner`, `claim reward`, `free gift`, `lottery`, and `prize`.
+- Fear/security language such as `unauthorized access`, `security alert`, `suspicious activity`, and `account compromised`.
+
+### Sender And Link Signals
+
+Sender identity analysis detects:
+
+- Free email provider impersonation, such as a Gmail sender claiming to represent Google or a security team.
+- Claimed brand vs sender domain mismatch.
+- Simple lookalike sender domains.
+- Phone number senders claiming to represent a bank, company, government, or security service.
+
+Message link analysis detects:
+
+- HTTP links.
+- URL shorteners.
+- Suspicious TLDs.
+- Suspicious login/account/update words.
+- Brand words in fake destination domains.
+- Displayed link text that mentions a brand while the actual destination domain is not official.
+
+### Repeated Message Detection
+
+`POST /api/analyze-message` stores local scan history in `backend/trusttrace.db`.
+
+- Full message bodies are not stored.
+- TrustTrace AI stores a SHA-256 hash, sender, subject, source URL, short normalized preview, risk level, phishing probability, timestamps, and scan count.
+- If a similar message is scanned more than once, the response includes `repeat_count`, `repeat_warning`, and `repeat_signals`.
+
 ### Scoring Model
 
-The MVP scoring engine uses transparent rule weights. Each detected signal adds risk points. The final score is capped at `100`.
+The MVP scoring engine uses an evidence-based multi-layer pipeline. The final score is capped at `100`.
+
+Layer 1: known threat-intelligence placeholders for PhishTank, OpenPhish cached feeds, Google Safe Browsing, URLhaus, and VirusTotal. These return neutral `not_configured` results until future integrations are added.
+
+Layer 2: reputation and legitimacy checks for official trusted brand domains, high-reputation MVP domains, Tranco, RDAP/domain age, URLScan, and certificate reputation placeholders.
+
+Layer 3: ML and deep-analysis placeholders plus local checks for homoglyphs, brand spoofing, suspicious TLDs, suspicious subdomain depth, and lookalike domains.
 
 - `phishing_probability` is the capped risk score divided by `100`.
 - `trust_score` is `100` minus the capped risk score.
 - `risk_level` is `low` below `30`, `medium` from `30` to `59`, and `high` at `60` or above.
+- `confidence` describes how strong the current evidence is.
+- `trust_signals` explain legitimacy indicators such as official domains or local high-reputation matches.
+
+Brand impersonation is suspicious only when the brand appears outside the official domain. Hidden inputs, normal forms, brand names, and ordinary login/account wording are not enough by themselves to mark official high-reputation sites suspicious.
 
 For `/api/analyze-page`, local development URLs skip URL risk scoring but still run page content and form analysis. This makes it possible to test suspicious local HTML pages served from `localhost` or `127.0.0.1`.
 

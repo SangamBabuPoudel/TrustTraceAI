@@ -36,6 +36,7 @@ def analyze_forms(
     forms: list[FormMetadata],
     has_suspicious_url: bool,
     has_suspicious_content: bool,
+    is_trusted_context: bool = False,
 ) -> FormAnalysis:
     reasons: list[str] = []
     signals: list[str] = []
@@ -45,24 +46,24 @@ def analyze_forms(
     for index, form in enumerate(forms, start=1):
         form_label = f"Form {index}"
 
-        if form.has_password_field:
+        if form.has_password_field and not is_trusted_context:
             risk_score += 30
             signals.append("password_field_present")
             reasons.append(f"{form_label}: A password field was detected.")
 
-        if form.has_email_or_username_field:
+        if form.has_email_or_username_field and not is_trusted_context:
             risk_score += 10
             signals.append("email_or_username_field_present")
             reasons.append(f"{form_label}: An email or username field was detected.")
 
-        if form.has_email_or_username_field and form.has_password_field:
+        if form.has_email_or_username_field and form.has_password_field and not is_trusted_context:
             risk_score += 30
             signals.append("email_password_login_combo")
             reasons.append(
                 f"{form_label}: The form asks for both an email or username and a password."
             )
 
-        if _has_missing_action(form):
+        if _has_missing_action(form) and not is_trusted_context:
             risk_score += 15
             signals.append("missing_form_action")
             reasons.append(
@@ -83,7 +84,7 @@ def analyze_forms(
             )
 
         suspicious_submit_words = _find_suspicious_submit_words(form.submit_text)
-        if suspicious_submit_words:
+        if suspicious_submit_words and (not is_trusted_context or has_suspicious_content or has_suspicious_url):
             risk_score += 20
             signals.append("suspicious_submit_text")
             matched_words = ", ".join(suspicious_submit_words)
@@ -91,7 +92,7 @@ def analyze_forms(
                 f"{form_label}: The submit button uses suspicious action word(s): {matched_words}."
             )
 
-        if form.hidden_input_count > 0:
+        if form.hidden_input_count > 0 and not is_trusted_context:
             risk_score += 5
             signals.append("hidden_inputs_present")
             reasons.append(

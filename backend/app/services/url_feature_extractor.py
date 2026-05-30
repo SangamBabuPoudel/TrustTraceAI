@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from typing import Optional
 from urllib.parse import urlparse
 
+from app.services.reputation_service import analyze_url_reputation, is_official_for_brand
+
 
 SUSPICIOUS_KEYWORDS = {
     "login",
@@ -43,6 +45,12 @@ BRAND_IMPERSONATION_KEYWORDS = {
     "paypal",
     "amazon",
     "apple",
+    "openai",
+    "chatgpt",
+    "anthropic",
+    "claude",
+    "gemini",
+    "youtube",
     "microsoft",
     "google",
     "netflix",
@@ -51,6 +59,9 @@ BRAND_IMPERSONATION_KEYWORDS = {
     "bankofamerica",
     "chase",
     "wells-fargo",
+    "wellsfargo",
+    "github",
+    "wikipedia",
 }
 
 IP_ADDRESS_PATTERN = re.compile(r"^(?:\d{1,3}\.){3}\d{1,3}$")
@@ -89,6 +100,7 @@ def extract_url_features(url: str) -> UrlFeatures:
     normalized_hostname = hostname.lower()
     normalized_url = url.lower()
     normalized_shortener_host = normalized_hostname.removeprefix("www.")
+    reputation = analyze_url_reputation(url)
 
     suspicious_keywords = sorted(
         keyword for keyword in SUSPICIOUS_KEYWORDS if keyword in normalized_url
@@ -96,7 +108,7 @@ def extract_url_features(url: str) -> UrlFeatures:
     brand_impersonation_keywords = sorted(
         keyword
         for keyword in BRAND_IMPERSONATION_KEYWORDS
-        if keyword in normalized_url
+        if keyword in normalized_url and not is_official_for_brand(normalized_hostname, keyword)
     )
 
     hostname_parts = [part for part in hostname.split(".") if part]
@@ -111,7 +123,7 @@ def extract_url_features(url: str) -> UrlFeatures:
         hostname=hostname,
         length=len(url),
         uses_http=parsed_url.scheme == "http",
-        is_long_url=len(url) > 75,
+        is_long_url=len(url) > 75 and not reputation.is_high_reputation_domain,
         suspicious_keywords=suspicious_keywords,
         has_ip_address=bool(IP_ADDRESS_PATTERN.match(hostname)),
         hyphen_count=hyphen_count,

@@ -22,5 +22,6 @@ build/
 ml/data/raw/*
 ml/data/processed/*
 ml/saved_models/*
+backend/trusttrace.db
 
 !.gitkeep

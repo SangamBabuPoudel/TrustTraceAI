@@ -126,6 +126,7 @@ button {
 
 .url-card,
 .loading-card,
+.message-card,
 .result-card,
 .error-card {
   padding: 14px;
@@ -448,6 +449,101 @@ button {
 .secondary-button:disabled {
   cursor: not-allowed;
   opacity: 0.45;
+}
+
+.sender-label {
+  display: block;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sender-input {
+  width: 100%;
+  min-height: 38px;
+  margin-top: 6px;
+  padding: 9px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.09);
+  outline: none;
+}
+
+.sender-input:focus {
+  border-color: rgba(45, 212, 191, 0.52);
+}
+
+.privacy-note,
+.repeat-note {
+  margin: 9px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.repeat-note {
+  color: #fef3c7;
+}
+
+.wide-button {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.message-preview,
+.nearby-threats {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.candidate-card {
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.candidate-card strong,
+.nearby-heading {
+  display: block;
+  font-size: 13px;
+}
+
+.candidate-meta,
+.candidate-preview,
+.candidate-risk {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.candidate-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.mini-button {
+  min-height: 32px;
+  padding: 7px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.nearby-alert {
+  color: #fef3c7;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 [hidden] {

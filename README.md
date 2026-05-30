@@ -2,7 +2,7 @@
 
 TrustTrace AI is an explainable browser security extension for detecting phishing websites, scam links, fake login forms, suspicious emails/messages, malicious URLs, OCR screenshot scams, and dark patterns.
 
-This repository currently contains a clean local MVP foundation. It uses a Chrome Extension Manifest V3 popup and a FastAPI backend with simple rule-based URL, visible page content, and fake login form analysis. Machine learning and threat intelligence APIs are intentionally not included yet.
+This repository currently contains a clean local MVP foundation. It uses a Chrome Extension Manifest V3 popup and a FastAPI backend with simple rule-based URL, visible page content, fake login form, and user-controlled email/message analysis. Machine learning and threat intelligence APIs are intentionally not included yet.
 
 ## Problem Statement
 
@@ -18,6 +18,12 @@ Phishing and scam websites often rely on small signals that users can miss: inse
 - Rule-based URL risk detection.
 - Rule-based page content scam signal detection.
 - Rule-based fake login form and credential-harvesting detection.
+- User-controlled email/message threat scanning for selected or visible text.
+- Multiple visible message detection with a primary selected message.
+- Nearby threat previews without combining messages into one report.
+- Sender impersonation, suspicious link, and repeated message detection.
+- Multi-layer reputation and legitimacy pipeline to reduce false positives.
+- Local trusted-domain and high-reputation domain checks.
 - Explainable reasons for detected risk signals.
 - Beginner-readable modular code.
 
@@ -37,8 +43,10 @@ Included:
 - URL analysis.
 - Visible page content analysis.
 - Fake login form detection.
+- Email/message threat detection.
 - Local-only backend.
 - Rule-based risk scoring.
+- Threat-intelligence and ML integration placeholders.
 - Explainable output.
 - Documentation for architecture, API design, privacy, roadmap, and threat model.
 
@@ -73,6 +81,18 @@ TrustTraceAI/
         explanation_engine.py
         page_content_analyzer.py
         form_analyzer.py
+        message_analyzer.py
+        sender_identity_analyzer.py
+        message_link_analyzer.py
+        message_fingerprint_service.py
+        reputation_service.py
+        threat_intel_service.py
+        deep_analysis_service.py
+      data/
+        trusted_domains.py
+      database/
+        db.py
+        models.py
       models/
         schemas.py
     requirements.txt
@@ -128,6 +148,14 @@ curl -X POST http://127.0.0.1:8000/api/analyze-page \
   -d '{"url":"https://example.com","page_title":"Example Domain","visible_text":"Example visible page text","forms":[]}'
 ```
 
+Analyze a message:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/analyze-message \
+  -H "Content-Type: application/json" \
+  -d '{"source_url":"https://mail.google.com","subject":"Account Security Alert","sender":"google.security.alert@gmail.com","sender_type":"email","message_text":"Your Google account has been suspended due to unusual activity. Verify your password immediately to avoid account closure.","links":[{"text":"Google Login","href":"http://secure-google-login.example.com/verify"}]}'
+```
+
 ### Chrome Extension
 
 1. Open Chrome and go to `chrome://extensions`.
@@ -137,11 +165,22 @@ curl -X POST http://127.0.0.1:8000/api/analyze-page \
 5. Start the FastAPI backend locally.
 6. Open any website and click the TrustTrace AI extension popup.
 
+Local message test page:
+
+```bash
+python3 -m http.server 5500
+```
+
+Then open `http://127.0.0.1:5500/extension/test-scam-message.html`, enter `google.security.alert@gmail.com` in the popup sender field, highlight the fake Google message if desired, and click Scan Email/Message. The popup detects all visible message cards, scans only the selected/primary message, and shows a lightweight “Other Nearby Threats” preview for other risky visible messages.
+
+TrustTrace AI does not scan a full mailbox automatically. The user chooses which visible message to analyze deeply.
+
 ## Roadmap
 
 - Phase 1: Clean MVP foundation.
 - Phase 2: Page content scanning, fake login form detection, and browser page analysis.
-- Phase 3: Email and message scam detection.
+- Phase 3: User-controlled email and message scam detection with sender and repeat checks.
+- Phase 3.5: Multi-layer reputation and legitimacy pipeline.
 - Phase 4: OCR screenshot scam analysis.
 - Phase 5: Machine learning experiments.
 - Phase 6: Optional threat intelligence integrations.

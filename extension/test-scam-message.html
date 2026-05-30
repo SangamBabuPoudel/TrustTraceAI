@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Account Security Alert</title>
+    <style>
+      body {
+        max-width: 780px;
+        margin: 40px auto;
+        font-family: Arial, sans-serif;
+        line-height: 1.5;
+      }
+
+      .trusttrace-message-card {
+        margin-bottom: 28px;
+        padding: 18px;
+        border: 1px solid #d0d7de;
+        border-radius: 10px;
+      }
+
+      .sender {
+        color: #57606a;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <article
+      class="trusttrace-message-card"
+      data-trusttrace-message
+      data-sender="google.security.alert@gmail.com"
+      data-subject="Account Security Alert"
+    >
+      <h1>Account Security Alert</h1>
+      <p class="sender">Sender: google.security.alert@gmail.com</p>
+      <p>
+        Your Google account has been suspended due to unusual activity. Verify your
+        password immediately to avoid account closure.
+      </p>
+      <p>
+        <a href="http://secure-google-login.example.com/verify">Google Login</a>
+      </p>
+    </article>
+
+    <article
+      class="trusttrace-message-card"
+      data-trusttrace-message
+      data-sender="+1 813 555 0192"
+      data-subject="Chase Bank Account Locked"
+    >
+      <h2>SMS-style alert</h2>
+      <p class="sender">From: +1 813 555 0192</p>
+      <p>
+        Your Chase bank account is locked. Login now to verify your security code.
+      </p>
+      <p>
+        <a href="http://chase-secure-login.example.com">Chase secure login</a>
+      </p>
+    </article>
+
+    <article
+      class="trusttrace-message-card"
+      data-trusttrace-message
+      data-sender="newsletter@example.com"
+      data-subject="Weekly Team Lunch"
+    >
+      <h2>Weekly Team Lunch</h2>
+      <p class="sender">Sender: newsletter@example.com</p>
+      <p>
+        Hi team, lunch is scheduled for Friday at noon. Please reply with any dietary
+        preferences by Thursday afternoon.
+      </p>
+      <p>
+        <a href="https://example.com/lunch-menu">View lunch menu</a>
+      </p>
+    </article>
+  </body>
+</html>
