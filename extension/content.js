@@ -6,8 +6,10 @@ const SEARCH_BADGE_WRAP_CLASS = "trusttrace-badge-row";
 const MAX_SEARCH_RESULTS_TO_SCAN = 15;
 const DEFAULT_VISIBLE_LINK_LIMIT = 25;
 const PAGE_LINK_SCAN_LIMIT = 30;
+const CLIPBOARD_GUARDIAN_SETTING_KEY = "trusttraceClipboardGuardianEnabled";
 const searchResultCache = new Map();
 let searchScanTimer = null;
+let clipboardGuardianEnabled = false;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "SHOW_CAUTION_BANNER") {
@@ -37,6 +39,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     visibleText: getVisibleBodyText().slice(0, MAX_VISIBLE_TEXT_LENGTH),
     forms: collectFormMetadata(),
     links: collectVisibleLinks(),
+    clipboardSignals: clipboardGuardianEnabled
+      ? TrustTraceClipboardGuardian.detectSensitiveClipboardPageSignals(document)
+      : [],
     messageCandidates: collectMessageCandidates()
   });
 
@@ -44,6 +49,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 initSearchResultBadges();
+initClipboardGuardianContent();
 
 function getVisibleBodyText() {
   const bodyText = document.body?.innerText || "";
@@ -113,6 +119,100 @@ function collectMessageCandidates() {
     .filter((candidate) => candidate.message_text.length >= 20)
     .sort((a, b) => b.confidence_score - a.confidence_score || a.position.top - b.position.top)
     .slice(0, 12);
+}
+
+async function initClipboardGuardianContent() {
+  try {
+    const stored = await chrome.storage.local.get(CLIPBOARD_GUARDIAN_SETTING_KEY);
+    clipboardGuardianEnabled = Boolean(stored[CLIPBOARD_GUARDIAN_SETTING_KEY]);
+  } catch (error) {
+    clipboardGuardianEnabled = false;
+  }
+
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === "local" && changes[CLIPBOARD_GUARDIAN_SETTING_KEY]) {
+      clipboardGuardianEnabled = Boolean(changes[CLIPBOARD_GUARDIAN_SETTING_KEY].newValue);
+    }
+  });
+
+  document.addEventListener("click", handleClipboardCopyClick, true);
+}
+
+function handleClipboardCopyClick(event) {
+  if (!clipboardGuardianEnabled) {
+    return;
+  }
+
+  const element = event.target?.closest?.("button, a, [role='button'], [data-clipboard-text], [data-copy]");
+  if (!element || !looksLikeCopyElement(element)) {
+    return;
+  }
+
+  const copiedValue = getDeclaredCopiedValue(element);
+  if (!copiedValue) {
+    return;
+  }
+
+  const visibleValue = getNearbyVisibleCopyValue(element);
+  const comparison = TrustTraceClipboardGuardian.compareVisibleAndCopiedValue(visibleValue, copiedValue);
+
+  if (comparison.mismatch) {
+    showClipboardGuardianToast(comparison.reason);
+    chrome.runtime.sendMessage({ type: "TRUSTTRACE_RECORD_CLIPBOARD_MISMATCH" });
+  }
+}
+
+function looksLikeCopyElement(element) {
+  const text = `${element.innerText || ""} ${element.getAttribute("aria-label") || ""} ${element.getAttribute("title") || ""}`.toLowerCase();
+  return Boolean(
+    element.hasAttribute("data-clipboard-text") ||
+    element.hasAttribute("data-copy") ||
+    text.includes("copy")
+  );
+}
+
+function getDeclaredCopiedValue(element) {
+  return (
+    element.getAttribute("data-clipboard-text") ||
+    element.getAttribute("data-copy") ||
+    element.getAttribute("data-copy-value") ||
+    ""
+  ).trim();
+}
+
+function getNearbyVisibleCopyValue(element) {
+  const container = element.closest("section, article, li, p, div") || element.parentElement || element;
+  return (container.innerText || "").replace(/\s+/g, " ").trim();
+}
+
+function showClipboardGuardianToast(message) {
+  const existingToast = document.getElementById("trusttrace-clipboard-toast");
+  if (existingToast) {
+    existingToast.remove();
+  }
+
+  const toast = document.createElement("div");
+  toast.id = "trusttrace-clipboard-toast";
+  toast.style.cssText = [
+    "position:fixed",
+    "right:16px",
+    "bottom:16px",
+    "z-index:2147483647",
+    "max-width:340px",
+    "padding:12px 14px",
+    "border:1px solid #f59e0b",
+    "border-radius:12px",
+    "background:#fffbeb",
+    "color:#422006",
+    "box-shadow:0 14px 34px rgba(0,0,0,0.22)",
+    "font:600 13px/1.4 Arial,sans-serif"
+  ].join(";");
+  toast.textContent = `TrustTrace Clipboard Guardian: ${message}`;
+  document.documentElement.appendChild(toast);
+
+  setTimeout(() => {
+    toast.remove();
+  }, 6200);
 }
 
 function getCandidateElements() {

@@ -60,7 +60,13 @@ Reload the unpacked extension in `chrome://extensions`.
    - Show URL scans, high-risk blocks, caution warnings, suspicious messages, high-risk links, repeated scams, and most common attack type.
    - Mention that these are local-only summary counts with a reset option.
 
-9. Close with architecture.
+9. Show Clipboard Guardian.
+   - Open `http://127.0.0.1:5500/extension/test-clipboard-guardian.html`.
+   - Turn Clipboard Guardian on.
+   - Copy the suspicious URL and click Scan Clipboard Now.
+   - Show that raw clipboard text is not stored and non-URL content is analyzed locally.
+
+10. Close with architecture.
    - “The extension talks to FastAPI, FastAPI runs a multi-layer local scoring pipeline, and the UI renders warnings, banners, badges, and explanations.”
 
 ## Closing Line

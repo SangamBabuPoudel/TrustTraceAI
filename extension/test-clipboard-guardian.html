@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TrustTrace AI Clipboard Guardian Test</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        color: #172033;
+        background: #f6f8fb;
+      }
+
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 32px 18px;
+      }
+
+      section {
+        margin-top: 18px;
+        padding: 18px;
+        border: 1px solid #d8e0ea;
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      code {
+        display: block;
+        margin: 8px 0;
+        padding: 10px;
+        border-radius: 6px;
+        background: #eef2f7;
+        overflow-wrap: anywhere;
+      }
+
+      button {
+        min-height: 36px;
+        padding: 8px 12px;
+        border: 0;
+        border-radius: 6px;
+        background: #0f766e;
+        color: #fff;
+        cursor: pointer;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>TrustTrace AI Clipboard Guardian Test</h1>
+      <p>Turn on Clipboard Guardian in the popup, click a copy button, then use Scan Clipboard Now.</p>
+
+      <section>
+        <h2>Suspicious URL copy</h2>
+        <code>http://apple-login-security.example.com/verify</code>
+        <button data-clipboard-text="http://apple-login-security.example.com/verify">Copy suspicious URL</button>
+      </section>
+
+      <section>
+        <h2>Wallet copy mismatch</h2>
+        <p>Visible wallet:</p>
+        <code>0x1111111111111111111111111111111111111111</code>
+        <button data-clipboard-text="0x9999999999999999999999999999999999999999">Copy wallet address</button>
+      </section>
+
+      <section>
+        <h2>OTP phishing prompt</h2>
+        <p>Paste your OTP security code here to verify your account immediately.</p>
+        <button data-clipboard-text="123456">Copy sample OTP</button>
+      </section>
+
+      <section>
+        <h2>Recovery phrase warning</h2>
+        <p>Enter your seed phrase or recovery phrase to unlock your wallet.</p>
+        <button data-clipboard-text="seed phrase private key wallet recovery">Copy recovery phrase prompt</button>
+      </section>
+
+      <section>
+        <h2>Safe copy</h2>
+        <code>https://www.apple.com</code>
+        <button data-clipboard-text="https://www.apple.com">Copy official Apple URL</button>
+      </section>
+    </main>
+
+    <script>
+      document.addEventListener("click", async (event) => {
+        const button = event.target.closest("button[data-clipboard-text]");
+        if (!button) return;
+        await navigator.clipboard.writeText(button.dataset.clipboardText);
+        button.textContent = "Copied";
+        setTimeout(() => {
+          if (button.dataset.clipboardText.includes("apple-login-security")) {
+            button.textContent = "Copy suspicious URL";
+          } else if (button.dataset.clipboardText.startsWith("0x")) {
+            button.textContent = "Copy wallet address";
+          } else if (button.dataset.clipboardText === "123456") {
+            button.textContent = "Copy sample OTP";
+          } else if (button.dataset.clipboardText.includes("seed phrase")) {
+            button.textContent = "Copy recovery phrase prompt";
+          } else {
+            button.textContent = "Copy official Apple URL";
+          }
+        }, 1200);
+      });
+    </script>
+  </body>
+</html>

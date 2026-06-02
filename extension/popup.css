@@ -128,6 +128,7 @@ button {
 .loading-card,
 .message-card,
 .link-card,
+.clipboard-card,
 .report-card,
 .result-card,
 .error-card {
@@ -756,6 +757,70 @@ button {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 10px;
+}
+
+.toggle-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.toggle-control input {
+  width: 34px;
+  height: 18px;
+  accent-color: var(--low);
+  cursor: pointer;
+}
+
+.clipboard-result {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.clipboard-result.medium {
+  border-color: rgba(251, 191, 36, 0.42);
+}
+
+.clipboard-result.high {
+  border-color: rgba(251, 113, 133, 0.5);
+  background: rgba(127, 29, 29, 0.2);
+}
+
+.clipboard-result-top {
+  display: grid;
+  gap: 4px;
+}
+
+.clipboard-result-top span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.clipboard-result-top strong {
+  color: #ffffff;
+  font-size: 13px;
+}
+
+.clipboard-result ul,
+.clipboard-result p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.clipboard-result ul {
+  padding-left: 18px;
 }
 
 .mini-button {

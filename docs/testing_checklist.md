@@ -87,3 +87,16 @@ Use this checklist before recording a demo or submitting the project.
 - [ ] Scan a scam message and confirm suspicious message counters increase.
 - [ ] Scan the same scam message twice and confirm repeated scam warning counter increases.
 - [ ] Click Reset Local Stats and confirm counters reset after confirmation.
+
+## Clipboard Guardian Mode
+
+- [ ] Open `extension/test-clipboard-guardian.html`.
+- [ ] Confirm Clipboard Guardian is off by default.
+- [ ] Turn Clipboard Guardian on.
+- [ ] Copy the suspicious URL and click Scan Clipboard Now.
+- [ ] Confirm suspicious URL warning appears.
+- [ ] Copy the wallet mismatch button and confirm page warning appears.
+- [ ] Copy/sample scan OTP text and confirm OTP/security-code warning appears.
+- [ ] Scan recovery phrase/private key text and confirm high-risk warning appears.
+- [ ] Copy official Apple URL and confirm low-risk or safe URL handling.
+- [ ] Confirm report-card clipboard counters increase without storing raw text.

@@ -92,6 +92,21 @@ ATTACK_TEMPLATES = {
         ],
         "safer_action": "Open the official site directly instead of following the suspicious link.",
     },
+    "Clipboard manipulation risk": {
+        "attack_category": "Clipboard abuse",
+        "summary": "This page or clipboard content may be trying to manipulate copied values or trick users into pasting sensitive information.",
+        "how_it_works": [
+            "Attackers may ask users to paste OTPs, recovery phrases, private keys, or wallet addresses.",
+            "A malicious page may copy a different value than the one visibly shown.",
+            "Clipboard manipulation can redirect payments, steal accounts, or expose sensitive secrets.",
+        ],
+        "what_to_avoid": [
+            "Do not paste recovery phrases, private keys, passwords, OTPs, or payment addresses into untrusted pages.",
+            "Verify destination URLs and wallet addresses manually.",
+            "Do not trust copy buttons on suspicious pages without checking the pasted value.",
+        ],
+        "safer_action": "Use official apps or trusted websites, and manually verify sensitive copied values before pasting.",
+    },
     "Urgency / social engineering pressure": {
         "attack_category": "Social engineering",
         "summary": "This uses pressure language to make users act quickly.",
@@ -142,6 +157,7 @@ PRIORITY = [
     "Typosquatting / lookalike domain",
     "Insecure credential collection",
     "Suspicious link redirection",
+    "Clipboard manipulation risk",
     "Urgency / social engineering pressure",
     "Repeated scam/campaign pattern",
     "Unknown / low-risk",
@@ -213,6 +229,8 @@ def _detect_attack_types(evidence: str, threat_intel: Optional[dict], repeat_cou
         detected.append("Insecure credential collection")
     if _has_any(evidence, ["shortened", "shortener", "real destination", "displayed link text", "redirect", "mismatch", "multiple slashes"]):
         detected.append("Suspicious link redirection")
+    if _has_any(evidence, ["clipboard", "copied value", "copy button", "recovery phrase", "seed phrase", "private key", "wallet address", "paste otp", "paste security code"]):
+        detected.append("Clipboard manipulation risk")
     if _has_any(evidence, ["urgent", "immediately", "final warning", "suspended", "locked", "account closure", "unusual activity", "act now"]):
         detected.append("Urgency / social engineering pressure")
     if repeat_count > 1 or _has_any(evidence, ["similar message", "repeated", "campaign"]):

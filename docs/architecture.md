@@ -25,6 +25,7 @@ Local FastAPI Backend
   |-- Message Fingerprint Service
   |-- Attack Explanation Service
   |-- Local Security Report Metrics
+  |-- Clipboard Guardian Local Checks
   |
   v
 Risk Response
@@ -35,6 +36,7 @@ Risk Response
   |-- Search Result Badges
   |-- Universal Link Summary
   |-- Security Report Card
+  |-- Clipboard Guardian Result
 ```
 
 ## Chrome Extension
@@ -108,6 +110,12 @@ The attack explanation service uses existing reasons and signals to classify a l
 The extension stores local-only summary counters in `chrome.storage.local`. The report card tracks totals such as URL/page/message/link scans, high-risk blocks, medium cautions, suspicious messages, fake login form detections, repeated scam warnings, and attack type counts.
 
 It does not store passwords, cookies, full URLs, full message text, form values, personal identity, or full browsing history. Users can reset the local stats from the popup.
+
+## Clipboard Guardian Mode
+
+Clipboard Guardian is off by default. When enabled, it performs local checks for suspicious clipboard content and copy-button mismatch risks. The popup reads clipboard text only when the user clicks Scan Clipboard Now.
+
+Non-URL clipboard text is analyzed locally in the extension and is not sent to the backend. If the clipboard contains a URL, the popup may send only that URL to `/api/analyze-url` after the user initiates the scan.
 
 ## Current Limitations
 

@@ -29,6 +29,7 @@ This is a local MVP portfolio project. External threat intelligence APIs and mac
 | Medium-risk caution banner | Injects a yellow caution banner for medium-risk pages. |
 | Attack explanation mode | Explains attack type, how it works, what to avoid, and safer action. |
 | Personal Security Report Card | Local summary of scans, blocked threats, caution pages, risky links, repeated scams, and common attack types. |
+| Clipboard Guardian Mode | Optional local clipboard risk checks for suspicious URLs, OTPs, wallet addresses, recovery phrases, credentials, and copy-value mismatch risks. |
 | Privacy-first design | Local backend, no cookies/password collection, user-controlled message scans, resettable local stats. |
 
 ## Architecture Overview
@@ -66,7 +67,9 @@ The extension collects only the data needed for the selected workflow. The backe
    - Rule-based classification of likely attack type with educational guidance.
 6. Personal Security Report Card
    - Local-only summary counters for protection activity.
-7. Future ML/community learning
+7. Clipboard Guardian Mode
+   - Opt-in local clipboard safety checks; non-URL clipboard text is not sent to the backend.
+8. Future ML/community learning
    - Placeholder architecture for URL classifiers, community reports, and richer threat intelligence.
 
 ## Screenshots
@@ -143,6 +146,7 @@ http://127.0.0.1:5500/extension/test-scam-message.html
 http://127.0.0.1:5500/extension/test-previsit-links.html
 http://127.0.0.1:5500/extension/test-universal-links.html
 http://127.0.0.1:5500/extension/test-attack-explanations.html
+http://127.0.0.1:5500/extension/test-clipboard-guardian.html
 ```
 
 ## Demo Workflow
@@ -165,6 +169,8 @@ Use this as a quick portfolio walkthrough:
    - Show TrustTrace search result badges beside visible results.
 8. Open the Security Report section in the popup.
    - Show local totals, high-risk blocks, caution warnings, repeated scams, and most common attack type.
+9. Turn on Clipboard Guardian and scan the clipboard test page.
+   - Show suspicious URL, wallet mismatch, OTP/code, and recovery phrase warnings.
 
 ## Testing Pages
 
@@ -183,6 +189,8 @@ Use this as a quick portfolio walkthrough:
 - Link scanning uses visible URLs plus lightweight link text/context only.
 - Repeated message detection stores hashes and short metadata, not full message bodies.
 - Security Report Card stores local summary counts only and includes a reset option.
+- Clipboard Guardian is off by default and reads clipboard text only after the user clicks Scan Clipboard Now.
+- Non-URL clipboard text is analyzed locally and is not sent to the backend.
 - API keys are not stored in the frontend; external APIs are future backend integrations.
 - The MVP runs locally and does not send data to third-party threat intelligence services.
 
@@ -200,6 +208,7 @@ Completed:
 - MVP 8: Local threat intelligence, deep URL heuristics, universal link intelligence, and search result annotation.
 - MVP 9: Attack Explanation Mode.
 - MVP 10: Personal Security Report Card.
+- MVP 11: Clipboard Guardian Mode.
 
 Future:
 

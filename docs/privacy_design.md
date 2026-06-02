@@ -23,6 +23,7 @@ TrustTrace AI is designed around minimal collection, local analysis, and user-co
 | Message scan | Selected or visible message text, optional sender input, visible links. |
 | Repeated message detection | Hash and short metadata, not full message body. |
 | Security Report Card | Local summary counters and attack type counts. |
+| Clipboard Guardian | User-initiated clipboard text scan; non-URL text is local-only. |
 
 ## What Is Not Collected
 
@@ -34,6 +35,7 @@ TrustTrace AI is designed around minimal collection, local analysis, and user-co
 - Browser history.
 - Full URL paths for report-card metrics.
 - Search query text for annotation.
+- Raw clipboard text or clipboard history.
 - API keys in frontend code.
 
 ## Repeated Message Storage
@@ -68,6 +70,17 @@ Pre-visit protection sends only the destination URL to the local backend. Page c
 The report card uses `chrome.storage.local` to store local summary counts on this browser. It tracks counts such as total scans, high-risk blocks, caution banners, suspicious messages, high-risk links, fake login forms, repeated scam warnings, and attack type counts.
 
 It does not store full message text, passwords, cookies, form values, personal account data, or full browsing history. The popup includes Reset Local Stats so the user can clear report-card metrics at any time.
+
+## Clipboard Guardian Mode
+
+- Clipboard Guardian is off by default.
+- The user must manually turn it on.
+- Clipboard text is read only when the user clicks Scan Clipboard Now.
+- Raw clipboard text is not stored.
+- Clipboard history is not stored.
+- Non-URL clipboard text is analyzed locally and is not sent to the backend.
+- Clipboard URLs may be sent to `/api/analyze-url` only after the user clicks Scan Clipboard Now.
+- The feature detects suspicious URLs, OTP/security codes, wallet addresses, recovery phrases, private keys, credential-like text, and copy-value mismatches.
 
 ## External Integrations
 

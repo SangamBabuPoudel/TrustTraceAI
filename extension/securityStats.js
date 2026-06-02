@@ -20,6 +20,11 @@ const TRUSTTRACE_DEFAULT_STATS = {
   suspicious_messages_detected: 0,
   fake_login_forms_detected: 0,
   repeated_message_warnings: 0,
+  clipboard_scans: 0,
+  clipboard_warnings: 0,
+  clipboard_high_risk_findings: 0,
+  clipboard_url_scans: 0,
+  clipboard_mismatch_warnings: 0,
   attack_type_counts: TRUSTTRACE_DEFAULT_ATTACK_TYPES,
   last_updated: ""
 };
@@ -110,6 +115,28 @@ async function recordMessageScanResult(result) {
   });
 }
 
+async function recordClipboardScanResult(result, options = {}) {
+  return updateSecurityStats((stats) => {
+    stats.clipboard_scans += 1;
+    if (options.urlScanned) {
+      stats.clipboard_url_scans += 1;
+    }
+    if (result?.risk_level === "medium" || result?.risk_level === "high") {
+      stats.clipboard_warnings += 1;
+    }
+    if (result?.risk_level === "high") {
+      stats.clipboard_high_risk_findings += 1;
+    }
+  });
+}
+
+async function recordClipboardMismatchWarning() {
+  return updateSecurityStats((stats) => {
+    stats.clipboard_mismatch_warnings += 1;
+    stats.clipboard_warnings += 1;
+  });
+}
+
 function incrementRiskCounters(stats, result) {
   if (!result) {
     return;
@@ -144,5 +171,7 @@ globalThis.TrustTraceSecurityStats = {
   recordWarningBlock,
   recordCautionBanner,
   recordLinkScanSummary,
-  recordMessageScanResult
+  recordMessageScanResult,
+  recordClipboardScanResult,
+  recordClipboardMismatchWarning
 };

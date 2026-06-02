@@ -69,6 +69,19 @@
         <div class="link-scan-panel" id="link-scan-panel" hidden></div>
       </section>
 
+      <section class="glass-card clipboard-card" aria-labelledby="clipboard-label">
+        <div class="section-topline">
+          <span class="eyebrow" id="clipboard-label">Clipboard Guardian</span>
+          <label class="toggle-control">
+            <input id="clipboard-toggle" type="checkbox">
+            <span id="clipboard-toggle-label">Off</span>
+          </label>
+        </div>
+        <p class="privacy-note">Clipboard Guardian runs locally. Raw clipboard text is not stored or sent automatically.</p>
+        <button class="secondary-button wide-button" id="scan-clipboard" type="button">Scan Clipboard Now</button>
+        <div class="clipboard-result" id="clipboard-result" hidden></div>
+      </section>
+
       <section class="glass-card report-card" aria-labelledby="security-report-label">
         <div class="section-topline">
           <span class="eyebrow" id="security-report-label">Security Report</span>
@@ -134,6 +147,7 @@
     </main>
 
     <script src="securityStats.js"></script>
+    <script src="clipboardGuardian.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

@@ -14,6 +14,7 @@
 | MVP 8 | Complete | Local threat intelligence, deep URL heuristics, universal link intelligence, and search result annotation. |
 | MVP 9 | Complete | Attack Explanation Mode. |
 | MVP 10 | Complete | Personal Security Report Card with local-only summary metrics and reset option. |
+| MVP 11 | Complete | Clipboard Guardian Mode with opt-in local clipboard checks and copy-value mismatch warnings. |
 
 ## Future Work
 
@@ -53,6 +54,7 @@
 - QR code phishing scanner.
 - Screenshot/OCR scam analysis.
 - Settings page for privacy modes.
+- Clipboard Guardian configuration improvements.
 - Extension packaging and release workflow.
 
 ## Honest Scope

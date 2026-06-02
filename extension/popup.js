@@ -3,6 +3,7 @@ const PAGE_API_URL = "http://127.0.0.1:8000/api/analyze-page";
 const MESSAGE_API_URL = "http://127.0.0.1:8000/api/analyze-message";
 const MAX_VISIBLE_TEXT_LENGTH = 5000;
 const LINK_SCAN_CONCURRENCY = 4;
+const CLIPBOARD_GUARDIAN_SETTING_KEY = "trusttraceClipboardGuardianEnabled";
 
 const RISK_MESSAGES = {
   low: "Looks safe based on current checks.",
@@ -41,6 +42,10 @@ const senderInputElement = document.getElementById("sender-input");
 const messagePreviewElement = document.getElementById("message-preview");
 const nearbyThreatsElement = document.getElementById("nearby-threats");
 const linkScanPanelElement = document.getElementById("link-scan-panel");
+const clipboardToggleElement = document.getElementById("clipboard-toggle");
+const clipboardToggleLabelElement = document.getElementById("clipboard-toggle-label");
+const scanClipboardButton = document.getElementById("scan-clipboard");
+const clipboardResultElement = document.getElementById("clipboard-result");
 const securityReportGridElement = document.getElementById("security-report-grid");
 const reportMessageElement = document.getElementById("report-message");
 const refreshReportButton = document.getElementById("refresh-report");
@@ -86,7 +91,7 @@ async function collectPageContentWithScripting(tab) {
     const [result] = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       func: collectTrustTracePageSnapshot,
-      args: [MAX_VISIBLE_TEXT_LENGTH]
+      args: [MAX_VISIBLE_TEXT_LENGTH, clipboardToggleElement?.checked || false]
     });
 
     return normalizePageContent(result?.result, tab);
@@ -109,11 +114,12 @@ function normalizePageContent(pageContent, tab) {
     visible_text: (pageContent?.visibleText || "").slice(0, MAX_VISIBLE_TEXT_LENGTH),
     forms: pageContent?.forms || [],
     links: pageContent?.links || [],
+    clipboard_signals: pageContent?.clipboardSignals || [],
     message_candidates: pageContent?.messageCandidates || []
   };
 }
 
-function collectTrustTracePageSnapshot(maxVisibleTextLength) {
+function collectTrustTracePageSnapshot(maxVisibleTextLength, clipboardGuardianEnabledForSnapshot) {
   function getVisibleBodyText() {
     const bodyText = document.body?.innerText || "";
     return bodyText.replace(/\s+/g, " ").trim();
@@ -259,12 +265,39 @@ function collectTrustTracePageSnapshot(maxVisibleTextLength) {
       .slice(0, 12);
   }
 
+  function detectClipboardSignalsFallback() {
+    const terms = [
+      "copy address",
+      "copy wallet",
+      "copy code",
+      "paste code",
+      "paste otp",
+      "paste security code",
+      "paste password",
+      "recovery phrase",
+      "seed phrase",
+      "private key",
+      "wallet address",
+      "verification code",
+      "authentication code",
+      "one-time code",
+      "payment address",
+      "crypto address"
+    ];
+    const bodyText = (document.body?.innerText || "").replace(/\s+/g, " ").toLowerCase();
+    return terms
+      .filter((term) => bodyText.includes(term))
+      .map((term) => `Page contains clipboard-sensitive language: ${term}.`)
+      .slice(0, 8);
+  }
+
   return {
     pageTitle: document.title || "",
     selectedText: getSelectedText().slice(0, maxVisibleTextLength),
     visibleText: getVisibleBodyText().slice(0, maxVisibleTextLength),
     forms: collectFormMetadata(),
     links: collectVisibleLinks(),
+    clipboardSignals: clipboardGuardianEnabledForSnapshot ? detectClipboardSignalsFallback() : [],
     messageCandidates: collectMessageCandidates()
   };
 }
@@ -489,6 +522,7 @@ function getSignalGroups(result) {
     { title: "Threat Intelligence", reasons: threatIntelSignals },
     { title: "Deep URL Signals", reasons: deepSignals },
     { title: "URL signals", reasons: signals.url_signals || [] },
+    { title: "Clipboard Signals", reasons: signals.clipboard_signals || [] },
     { title: "Page content signals", reasons: signals.content_signals || [] },
     { title: "Form signals", reasons: signals.form_signals || [] }
   ];
@@ -594,6 +628,7 @@ async function scanCurrentUrl() {
       visible_text: pageContent.visible_text,
       forms: pageContent.forms
     });
+    applyClipboardSignalsToPageResult(result, pageContent.clipboard_signals);
     latestScanType = "website";
     renderResult(result);
     await TrustTraceSecurityStats.recordScanResult(result, "website");
@@ -604,6 +639,92 @@ async function scanCurrentUrl() {
       "Backend unavailable. Start the FastAPI server and try again."
     );
   }
+}
+
+function applyClipboardSignalsToPageResult(result, clipboardSignals) {
+  if (!clipboardSignals?.length) {
+    return;
+  }
+
+  result.signals = {
+    ...(result.signals || {}),
+    clipboard_signals: clipboardSignals
+  };
+  result.reasons = [
+    ...(result.reasons || []),
+    "Clipboard-related sensitive action detected.",
+    ...clipboardSignals
+  ];
+}
+
+async function initializeClipboardGuardianControls() {
+  const stored = await chrome.storage.local.get(CLIPBOARD_GUARDIAN_SETTING_KEY);
+  const enabled = Boolean(stored[CLIPBOARD_GUARDIAN_SETTING_KEY]);
+  clipboardToggleElement.checked = enabled;
+  updateClipboardToggleLabel(enabled);
+}
+
+async function setClipboardGuardianEnabled(enabled) {
+  await chrome.storage.local.set({ [CLIPBOARD_GUARDIAN_SETTING_KEY]: enabled });
+  updateClipboardToggleLabel(enabled);
+}
+
+function updateClipboardToggleLabel(enabled) {
+  clipboardToggleLabelElement.textContent = enabled ? "On" : "Off";
+}
+
+async function scanClipboardNow() {
+  clipboardResultElement.hidden = false;
+
+  if (!clipboardToggleElement.checked) {
+    renderClipboardResult({
+      risk_level: "low",
+      detected_type: "Clipboard Guardian is off",
+      reasons: ["Turn Clipboard Guardian on before scanning clipboard content."],
+      safer_action: "Enable Clipboard Guardian when you want a local clipboard safety check."
+    });
+    return;
+  }
+
+  try {
+    const clipboardText = await navigator.clipboard.readText();
+    const isUrl = /^https?:\/\//i.test(clipboardText.trim());
+    let urlResult = null;
+
+    if (isUrl) {
+      try {
+        urlResult = await analyzeUrlOnly(clipboardText.trim());
+      } catch (error) {
+        urlResult = null;
+      }
+    }
+
+    const result = TrustTraceClipboardGuardian.analyzeClipboardText(clipboardText, urlResult);
+    renderClipboardResult(result);
+    await TrustTraceSecurityStats.recordClipboardScanResult(result, { urlScanned: isUrl });
+    await renderSecurityReport();
+  } catch (error) {
+    renderClipboardResult({
+      risk_level: "medium",
+      detected_type: "Clipboard unavailable",
+      reasons: ["Clipboard could not be read. Use the browser permission prompt and try again."],
+      safer_action: "Scan only when you intentionally want TrustTrace to inspect current clipboard text locally."
+    });
+  }
+}
+
+function renderClipboardResult(result) {
+  const riskLevel = result.risk_level || "low";
+  clipboardResultElement.hidden = false;
+  clipboardResultElement.className = `clipboard-result ${riskLevel}`;
+  clipboardResultElement.innerHTML = `
+    <div class="clipboard-result-top">
+      <span>Clipboard Risk Level: ${escapeHtml(capitalize(riskLevel))}</span>
+      <strong>${escapeHtml(result.detected_type || "No obvious clipboard threat")}</strong>
+    </div>
+    <ul>${(result.reasons || []).map((reason) => `<li>${escapeHtml(reason)}</li>`).join("")}</ul>
+    <p>${escapeHtml(result.safer_action || "Review clipboard content before pasting it into sensitive pages.")}</p>
+  `;
 }
 
 async function scanEmailMessage() {
@@ -880,6 +1001,10 @@ async function renderSecurityReport() {
     ["High-risk links", stats.high_risk_links_detected],
     ["Fake login forms", stats.fake_login_forms_detected],
     ["Repeated scams", stats.repeated_message_warnings],
+    ["Clipboard scans", stats.clipboard_scans],
+    ["Clipboard warnings", stats.clipboard_warnings],
+    ["Clipboard high risk", stats.clipboard_high_risk_findings],
+    ["Copy mismatches", stats.clipboard_mismatch_warnings],
     ["Top attack", mostCommonAttack]
   ];
 
@@ -1264,6 +1389,10 @@ Repeat Signals:
 rescanButton.addEventListener("click", scanCurrentUrl);
 scanMessageButton.addEventListener("click", scanEmailMessage);
 scanLinksButton.addEventListener("click", scanLinksOnPage);
+clipboardToggleElement.addEventListener("change", () => {
+  setClipboardGuardianEnabled(clipboardToggleElement.checked);
+});
+scanClipboardButton.addEventListener("click", scanClipboardNow);
 refreshReportButton.addEventListener("click", renderSecurityReport);
 resetReportButton.addEventListener("click", resetLocalSecurityReport);
 
@@ -1288,4 +1417,5 @@ copyReportButton.addEventListener("click", async () => {
 });
 
 scanCurrentUrl();
+initializeClipboardGuardianControls();
 renderSecurityReport();

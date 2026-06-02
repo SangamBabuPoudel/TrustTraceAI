@@ -115,6 +115,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true;
   }
 
+  if (message?.type === "TRUSTTRACE_RECORD_CLIPBOARD_MISMATCH") {
+    TrustTraceSecurityStats.recordClipboardMismatchWarning().then(() => {
+      sendResponse({ ok: true });
+    });
+    return true;
+  }
+
   return false;
 });
 
@@ -128,7 +135,7 @@ async function showCautionBanner(tabId, result) {
     try {
       await chrome.scripting.executeScript({
         target: { tabId },
-        files: ["content.js"]
+        files: ["clipboardGuardian.js", "content.js"]
       });
       await chrome.tabs.sendMessage(tabId, {
         type: "SHOW_CAUTION_BANNER",
