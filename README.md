@@ -1,224 +1,210 @@
-# TrustTrace AI
+# TrustTrace AI - Explainable AI Browser Security Extension
 
-TrustTrace AI is an explainable browser security extension for detecting phishing websites, scam links, fake login forms, suspicious emails/messages, malicious URLs, OCR screenshot scams, and dark patterns.
-
-This repository currently contains a clean local MVP foundation. It uses a Chrome Extension Manifest V3 popup and a FastAPI backend with rule-based URL, visible page content, fake login form, user-controlled email/message analysis, local threat intelligence, deep URL heuristics, universal visible-link scanning, and Attack Explanation Mode. Machine learning and external threat intelligence APIs are intentionally not included yet.
+An explainable browser security extension that detects phishing websites, suspicious links, fake login forms, scam messages, and brand impersonation using layered risk scoring and real-time warnings.
 
 ## Problem Statement
 
-Phishing and scam websites often rely on small signals that users can miss: insecure HTTP pages, deceptive keywords, long URLs, IP-based links, excessive subdomains, and confusing symbols. TrustTrace AI aims to make those signals visible, explainable, and easy to understand.
+Many phishing defenses rely on simple blocklists or single-signal checks. That approach can miss newer scams, and it can also create false positives when a legitimate website uses normal login, account, or form language.
 
-HTTP / Not Secure pages are treated as caution signals rather than automatic phishing. HTTP combined with login, password, account, payment, billing, bank, or verification behavior is considered much more serious.
+TrustTrace AI combines multiple explainable signals: URL structure, domain legitimacy, local reputation, page content, login forms, message text, sender identity, link mismatch, repeated-message history, and attack explanations. The goal is not just to say “risky” or “safe,” but to explain what the attack might be and what the user should avoid doing.
+
+This is a local MVP portfolio project. External threat intelligence APIs and machine learning models are designed as future integration points, not claimed as production integrations today.
 
 ## Key Features
 
-- Chrome extension popup that reads the current tab URL and visible page text.
-- Local FastAPI backend.
-- `GET /health` endpoint.
-- `POST /api/analyze-url` endpoint.
-- `POST /api/analyze-page` endpoint.
-- Rule-based URL risk detection.
-- Rule-based page content scam signal detection.
-- Rule-based fake login form and credential-harvesting detection.
-- User-controlled email/message threat scanning for selected or visible text.
-- Multiple visible message detection with a primary selected message.
-- Nearby threat previews without combining messages into one report.
-- Sender impersonation, suspicious link, and repeated message detection.
-- Multi-layer reputation and legitimacy pipeline to reduce false positives.
-- Local MVP known-bad URL/domain blocklist for safe testing.
-- Deep URL heuristics for homoglyphs, punycode, typosquatting, entropy, suspicious TLDs, and brand spoofing.
-- Universal Link Intelligence for search-result annotation and page-wide visible link scans.
-- Attack Explanation Mode with attack type, how-it-works reasoning, what-to-avoid guidance, and safer action recommendations.
-- Pre-visit high-risk warning interstitial for dangerous URLs.
-- Medium-risk caution banner after page load.
-- Local trusted-domain and high-reputation domain checks.
-- Explainable reasons for detected risk signals.
-- Beginner-readable modular code.
+| Feature | What it does |
+|---|---|
+| Real-time URL risk scoring | Scores URLs through a local FastAPI backend. |
+| Trust score and phishing probability | Returns `trust_score`, `phishing_probability`, and `risk_level`. |
+| Official domain/reputation layer | Reduces false positives for trusted domains like Apple, OpenAI, Google, and Microsoft. |
+| Deep URL heuristics | Detects suspicious TLDs, IP hosts, punycode, homoglyphs, typosquatting, and brand spoofing. |
+| Page content scanning | Checks visible text for urgency, credential, account threat, payment, and scam language. |
+| Fake login form detection | Detects suspicious password forms, cross-domain form actions, missing actions, and HTTP credential collection. |
+| Email/message threat detection | User-controlled scan of selected or visible message text. |
+| Sender identity analysis | Flags free-email impersonation, brand/domain mismatches, and suspicious phone senders. |
+| Repeated scam message detection | Stores local message hashes to detect repeated similar messages without storing full bodies. |
+| Universal link intelligence | Scans visible links on any page and summarizes trusted, caution, high-risk, and unknown links. |
+| Search result annotation | Adds TrustTrace risk badges beside visible Google, Bing, DuckDuckGo, and Yahoo results. |
+| Pre-visit high-risk warning page | Redirects high-risk navigation to a serious warning interstitial. |
+| Medium-risk caution banner | Injects a yellow caution banner for medium-risk pages. |
+| Attack explanation mode | Explains attack type, how it works, what to avoid, and safer action. |
+| Privacy-first design | Local backend, no cookies/password collection, user-controlled message scans. |
+
+## Architecture Overview
+
+```text
+Chrome Extension
+  popup UI | content script | service worker
+        |
+        v
+FastAPI Backend
+        |
+        v
+Multi-Layer Threat Scoring Pipeline
+        |
+        v
+Popup Dashboard | Warning Page | Caution Banner | Search Badges
+```
+
+The extension collects only the data needed for the selected workflow. The backend applies rule-based scoring and returns explainable risk results. The UI then displays the trust score, grouped signals, and attack explanation.
+
+## Multi-Layer Detection Pipeline
+
+1. Local known-bad / future threat intelligence
+   - Local MVP blocklist for safe test domains.
+   - Placeholders for Google Safe Browsing, PhishTank, OpenPhish, URLHaus, VirusTotal, and hosts feeds.
+2. Reputation and legitimacy
+   - Official trusted brand domain verification.
+   - Local high-reputation allowlist for MVP testing.
+   - Future placeholders for Tranco, RDAP/domain age, URLScan, and certificate reputation.
+3. URL and domain heuristics
+   - HTTP, suspicious TLDs, IP hosts, encoded characters, URL shorteners, long queries, typosquatting, punycode, homoglyphs, and brand spoofing.
+4. Page/form/message analysis
+   - Visible text, fake login forms, sender identity, message links, link text/domain mismatch, and repeated-message detection.
+5. Attack explanation engine
+   - Rule-based classification of likely attack type with educational guidance.
+6. Future ML/community learning
+   - Placeholder architecture for URL classifiers, community reports, and richer threat intelligence.
+
+## Screenshots
+
+These are placeholders for GitHub portfolio screenshots.
+
+![Popup Dashboard](docs/screenshots/popup-dashboard.png)
+![High-Risk Warning Page](docs/screenshots/high-risk-warning.png)
+![Search Result Badges](docs/screenshots/search-result-badges.png)
+![Universal Link Scan Summary](docs/screenshots/universal-link-scan.png)
+![Email Message Scan Result](docs/screenshots/message-scan-result.png)
+![Attack Explanation Mode](docs/screenshots/attack-explanation-mode.png)
 
 ## Tech Stack
 
 - Chrome Extension Manifest V3
-- HTML, CSS, and JavaScript
+- JavaScript, HTML, CSS
 - Python
 - FastAPI
 - Pydantic
-- Uvicorn
+- SQLite
+- Git/GitHub
+- Rule-based explainable scoring
+- Future-ready API/ML placeholders
 
-## MVP Scope
+## Local Setup
 
-Included:
+1. Clone the repository.
 
-- URL analysis.
-- Visible page content analysis.
-- Fake login form detection.
-- Email/message threat detection.
-- Local-only backend.
-- Rule-based risk scoring.
-- Threat-intelligence and ML integration placeholders.
-- Local blocklist and deep URL/domain heuristic checks.
-- Search result annotation and page-wide visible link scanning.
-- Rule-based explainable attack classification.
-- Explainable output.
-- Documentation for architecture, API design, privacy, roadmap, and threat model.
-
-Not included yet:
-
-- Machine learning.
-- External threat intelligence APIs.
-- Screenshot OCR.
-- Production deployment.
-
-## Folder Structure
-
-```text
-TrustTraceAI/
-  extension/
-    manifest.json
-    popup.html
-    popup.js
-    popup.css
-    background.js
-    content.js
-    icons/
-  backend/
-    app/
-      main.py
-      routes/
-        analyze.py
-      services/
-        url_feature_extractor.py
-        risk_scoring_engine.py
-        explanation_engine.py
-        page_content_analyzer.py
-        form_analyzer.py
-        message_analyzer.py
-        sender_identity_analyzer.py
-        message_link_analyzer.py
-        message_fingerprint_service.py
-        reputation_service.py
-        threat_intel_service.py
-        deep_analysis_service.py
-      data/
-        trusted_domains.py
-        local_blocklist.py
-      database/
-        db.py
-        models.py
-      models/
-        schemas.py
-    requirements.txt
-    .env.example
-  ml/
-    data/
-      raw/
-      processed/
-    notebooks/
-    training/
-    saved_models/
-  docs/
-    architecture.md
-    roadmap.md
-    api_design.md
-    privacy_design.md
-    threat_model.md
-  README.md
-  .gitignore
+```bash
+git clone <your-repo-url>
+cd TrustTraceAI
 ```
 
-## Setup Instructions
-
-### Backend
+2. Create and activate a Python virtual environment.
 
 ```bash
 cd backend
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
+```
+
+3. Install backend dependencies.
+
+```bash
 pip install -r requirements.txt
-uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Check the API:
+4. Run the FastAPI backend.
 
 ```bash
-curl http://127.0.0.1:8000/health
+python3 -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
 
-Analyze a URL:
+5. Load the Chrome extension.
+
+- Open `chrome://extensions`
+- Enable Developer mode
+- Click Load unpacked
+- Select the `extension/` folder
+
+6. Start a local test server from the repository root.
 
 ```bash
-curl -X POST http://127.0.0.1:8000/api/analyze-url \
-  -H "Content-Type: application/json" \
-  -d '{"url":"http://secure-login-bank.example.com/verify/account"}'
-```
-
-Analyze a page:
-
-```bash
-curl -X POST http://127.0.0.1:8000/api/analyze-page \
-  -H "Content-Type: application/json" \
-  -d '{"url":"https://example.com","page_title":"Example Domain","visible_text":"Example visible page text","forms":[]}'
-```
-
-Analyze a message:
-
-```bash
-curl -X POST http://127.0.0.1:8000/api/analyze-message \
-  -H "Content-Type: application/json" \
-  -d '{"source_url":"https://mail.google.com","subject":"Account Security Alert","sender":"google.security.alert@gmail.com","sender_type":"email","message_text":"Your Google account has been suspended due to unusual activity. Verify your password immediately to avoid account closure.","links":[{"text":"Google Login","href":"http://secure-google-login.example.com/verify"}]}'
-```
-
-### Chrome Extension
-
-1. Open Chrome and go to `chrome://extensions`.
-2. Enable Developer mode.
-3. Select Load unpacked.
-4. Choose the `extension/` folder.
-5. Start the FastAPI backend locally.
-6. Open any website and click the TrustTrace AI extension popup.
-
-Local message test page:
-
-```bash
+cd ..
 python3 -m http.server 5500
 ```
 
-Then open `http://127.0.0.1:5500/extension/test-scam-message.html`, enter `google.security.alert@gmail.com` in the popup sender field, highlight the fake Google message if desired, and click Scan Email/Message. The popup detects all visible message cards, scans only the selected/primary message, and shows a lightweight “Other Nearby Threats” preview for other risky visible messages.
-
-TrustTrace AI does not scan a full mailbox automatically. The user chooses which visible message to analyze deeply.
-
-Pre-visit protection test page:
+7. Open local test pages in Chrome.
 
 ```text
+http://127.0.0.1:5500/extension/test-phishing.html
+http://127.0.0.1:5500/extension/test-scam-message.html
 http://127.0.0.1:5500/extension/test-previsit-links.html
-```
-
-The extension checks only the destination URL before navigation. High-risk links open `warning.html`, medium-risk links load with a yellow caution banner, and safe official domains open normally. Proceed Anyway creates a temporary session bypass for the exact URL only.
-
-Universal Link Intelligence test page:
-
-```text
 http://127.0.0.1:5500/extension/test-universal-links.html
-```
-
-Open the popup and click Scan Links on This Page. TrustTrace AI scans visible link URLs only, summarizes trusted/caution/high-risk links, and lists the riskiest links with explanations. Search result annotation also adds small TrustTrace badges to visible results on Google, Bing, DuckDuckGo, and Yahoo without collecting the search query.
-
-Attack Explanation Mode test page:
-
-```text
 http://127.0.0.1:5500/extension/test-attack-explanations.html
 ```
 
-Scan the page, links, or included fake message to see attack types such as credential phishing, brand impersonation, typosquatting, insecure credential collection, and repeated scam/campaign behavior.
+## Demo Workflow
+
+Use this as a quick portfolio walkthrough:
+
+1. Scan an official website such as `https://www.apple.com` or `https://openai.com`.
+   - Show low risk, high trust score, and trust signals.
+2. Scan a fake phishing URL such as `http://apple-login-security.example.com/verify`.
+   - Show high risk, local blocklist/deep URL signals, and attack explanation.
+3. Click a fake high-risk link from `test-previsit-links.html`.
+   - Show the warning page and Proceed Anyway session bypass.
+4. Scan `test-phishing.html`.
+   - Show fake login form detection and credential-harvesting explanation.
+5. Scan `test-scam-message.html`.
+   - Show sender impersonation, message threat detection, suspicious link analysis, and repeated scan count.
+6. Scan links on `test-universal-links.html`.
+   - Show total scanned links, trusted/caution/high-risk counts, and top risky links.
+7. Open a Google search page.
+   - Show TrustTrace search result badges beside visible results.
+
+## Testing Pages
+
+- `extension/test-phishing.html` - local fake login page.
+- `extension/test-scam-message.html` - scam email/message cards.
+- `extension/test-previsit-links.html` - safe and risky navigation links.
+- `extension/test-universal-links.html` - mixed visible links for page-wide scanning.
+- `extension/test-attack-explanations.html` - examples for attack explanation mode.
+
+## Privacy And Safety
+
+- Pre-visit warnings use URL-only checks.
+- TrustTrace AI does not collect passwords.
+- TrustTrace AI does not collect cookies.
+- Email/message scans are user-controlled.
+- Link scanning uses visible URLs plus lightweight link text/context only.
+- Repeated message detection stores hashes and short metadata, not full message bodies.
+- API keys are not stored in the frontend; external APIs are future backend integrations.
+- The MVP runs locally and does not send data to third-party threat intelligence services.
 
 ## Roadmap
 
-- Phase 1: Clean MVP foundation.
-- Phase 2: Page content scanning, fake login form detection, and browser page analysis.
-- Phase 3: User-controlled email and message scam detection with sender and repeat checks.
-- Phase 3.5: Multi-layer reputation and legitimacy pipeline.
-- Phase 4: Pre-visit high-risk warning and medium-risk caution banners.
-- Phase 4.5: Local threat intelligence, deep URL heuristics, universal visible-link intelligence, and Attack Explanation Mode.
-- Phase 5: OCR screenshot scam analysis.
-- Phase 6: Machine learning experiments.
-- Phase 7: Optional threat intelligence integrations.
-- Phase 8: Product hardening and deployment preparation.
+Completed:
+
+- MVP 1: Clean extension and FastAPI foundation.
+- MVP 2: URL phishing analysis.
+- MVP 3: Reputation and legitimacy layer.
+- MVP 4: Page content scanning.
+- MVP 5: Fake login form detection.
+- MVP 6: Email/message threat detection.
+- MVP 7: Pre-visit warning page and caution banner.
+- MVP 8: Local threat intelligence, deep URL heuristics, universal link intelligence, and search result annotation.
+- MVP 9: Attack Explanation Mode.
+
+Future:
+
+- Real Google Safe Browsing / PhishTank / URLHaus integration.
+- Tranco/RDAP/URLScan integration.
+- ML URL classifier.
+- QR code phishing scanner.
+- Community threat intelligence.
+- Personal Security Report Card.
+
+## Resume Bullets
+
+- Built TrustTrace AI, a Chrome Extension MV3 and FastAPI cybersecurity tool that detects phishing URLs, fake login forms, scam messages, sender impersonation, suspicious links, and repeated campaign patterns with explainable risk scoring.
+- Designed a multi-layer threat pipeline combining local reputation checks, URL/domain heuristics, page/form/message analysis, pre-visit warnings, search result annotations, and rule-based attack explanations.
+- Implemented privacy-first browser security workflows including user-controlled message scanning, URL-only pre-visit checks, local SQLite hash-based repeat detection, and no cookie/password collection.

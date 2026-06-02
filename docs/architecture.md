@@ -1,66 +1,109 @@
-# TrustTrace AI Architecture
+# Architecture
 
-TrustTrace AI starts as a local browser extension plus FastAPI backend.
+TrustTrace AI is a local Chrome Extension MV3 and FastAPI system for explainable browser security analysis.
 
-## Components
+## High-Level Diagram
 
-- Chrome extension popup: reads the active tab URL and displays the analysis result.
-- Chrome extension service worker: checks navigations with `/api/analyze-url` before or during page load.
-- Universal Link Intelligence content script: extracts visible links, annotates search results, and supplies page-wide link lists to the popup.
-- Warning interstitial: blocks high-risk destinations and lets users go back or proceed for the current session.
-- Caution banner: warns on medium-risk destinations after the page loads.
-- FastAPI backend: exposes local analysis endpoints for the extension.
-- Threat intelligence layer: checks a local MVP known-bad blocklist and reserves PhishTank, OpenPhish, Google Safe Browsing, URLhaus, VirusTotal, and host feed integrations for later.
-- Reputation and legitimacy layer: verifies official trusted brand domains and local high-reputation domains.
-- Deep analysis layer: runs local homoglyph, punycode, typosquatting, entropy, TLD, IP-hostname, subdomain, and lookalike checks, with placeholders for ML, RDAP, Tranco, URLScan, and certificate reputation.
-- Attack explanation layer: converts existing risk signals into a human-readable attack type, how-it-works explanation, what-to-avoid guidance, and safer action.
-- URL feature extractor: turns a URL into simple security signals.
-- Risk scoring engine: converts signals into a risk level, phishing probability, and trust score.
-- Explanation engine: converts detected signals into beginner-readable reasons.
-- ML workspace: reserved for future datasets, notebooks, training, and saved models.
+```text
+User Browser
+  |
+  |-- Popup UI
+  |-- Content Script
+  |-- MV3 Service Worker
+  |
+  v
+Local FastAPI Backend
+  |
+  |-- URL Feature Extractor
+  |-- Reputation Service
+  |-- Local Threat Intel Service
+  |-- Deep URL Analysis Service
+  |-- Page Content Analyzer
+  |-- Form Analyzer
+  |-- Message Analyzer
+  |-- Sender Identity Analyzer
+  |-- Message Fingerprint Service
+  |-- Attack Explanation Service
+  |
+  v
+Risk Response
+  |
+  |-- Popup Dashboard
+  |-- Warning Interstitial
+  |-- Caution Banner
+  |-- Search Result Badges
+  |-- Universal Link Summary
+```
 
-## MVP Flow
+## Chrome Extension
 
-1. The user opens the extension popup.
-2. The popup reads the active browser tab URL.
-3. The popup sends URL, page, form, or selected message data to the local API.
-4. The backend checks the local known-bad blocklist, threat-intel placeholders, reputation/legitimacy, and deep local signals.
-5. The backend suppresses weak false-positive signals on official or high-reputation domains.
-6. The backend scores strong evidence such as fake brand domains, credential harvesting, sender impersonation, or link mismatch.
-7. The popup displays risk, trust score, reasons, trust signals, confidence, and grouped evidence.
-8. Attack Explanation Mode summarizes the likely attack pattern without calling an external AI model.
+- `popup.html`, `popup.css`, `popup.js`: interactive dashboard for page scans, message scans, link scans, copy report, and attack explanations.
+- `content.js`: collects visible page text, form metadata, message candidates, visible links, and search result links. It also injects caution banners and search result badges.
+- `background.js`: MV3 service worker for pre-visit URL checks, high-risk warning redirects, high-risk cache, session bypass, and URL analysis requests from content scripts.
+- `warning.html`, `warning.css`, `warning.js`: high-risk interstitial with risk evidence and attack explanation.
 
-## Pre-Visit Protection Flow
+## Backend
 
-1. The Manifest V3 service worker listens for top-level HTTP/HTTPS navigation.
-2. Localhost, extension pages, file URLs, browser URLs, mailto links, and phone links are ignored.
-3. The service worker calls `POST /api/analyze-url` with the destination URL only.
-4. High-risk results redirect the tab to `warning.html`.
-5. Medium-risk results allow the page to load and inject a yellow caution banner.
-6. Proceed Anyway stores a temporary session bypass for the exact URL.
-7. High-risk URLs/domains are cached locally so repeat visits warn faster.
+The backend is a local FastAPI app with three primary analysis endpoints:
 
-## Universal Link Intelligence Flow
+- `POST /api/analyze-url`
+- `POST /api/analyze-page`
+- `POST /api/analyze-message`
 
-1. On Google, Bing, DuckDuckGo, and Yahoo result pages, the content script extracts visible organic result links.
-2. Each result URL is sent through the service worker to `POST /api/analyze-url`.
-3. The page receives a small TrustTrace badge: Trusted, Low, Caution, High Risk, or Unknown.
-4. On any normal webpage, the popup can request visible links from the content script with `TRUSTTRACE_EXTRACT_VISIBLE_LINKS`.
-5. The popup scans unique visible URLs with limited concurrency and shows totals plus the riskiest links.
-6. High-risk clicks are still handled by the existing pre-visit warning system; link scanning does not navigate automatically.
+Each endpoint returns explainable fields such as `risk_level`, `phishing_probability`, `trust_score`, `reasons`, grouped `signals`, `reputation`, `deep_analysis`, and `attack_explanation` where applicable.
 
-## Multi-Layer URL Pipeline
+## Multi-Layer Scoring Pipeline
 
-1. Layer 1: Local MVP known-bad blocklist plus placeholders for future PhishTank, OpenPhish, Google Safe Browsing, URLhaus, VirusTotal, and host feed integrations.
-2. Layer 2: Reputation and legitimacy checks for official brand domains, high-reputation domains, Tranco, RDAP/domain age, URLScan, and certificate reputation placeholders.
-3. Layer 3: ML and deep analysis placeholders plus local homoglyph, punycode, typosquatting, entropy, brand spoofing, suspicious TLD, IP hostname, subdomain, and lookalike checks.
+```text
+Incoming URL / Page / Message
+  |
+  v
+Layer 1: Local known-bad blocklist + future threat intel placeholders
+  |
+  v
+Layer 2: Official domain and reputation checks
+  |
+  v
+Layer 3: URL/domain heuristics
+  |
+  v
+Layer 4: Page, form, sender, message, and link analysis
+  |
+  v
+Layer 5: Attack Explanation Mode
+  |
+  v
+Risk response rendered in extension UI
+```
 
-Known-bad blocklist matches are instant high-risk evidence. Official trusted domains suppress weak signals such as normal forms, hidden inputs, and ordinary login wording unless stronger evidence appears.
+## Warning Flow
+
+1. The service worker listens for top-level HTTP/HTTPS navigation.
+2. It skips local development URLs, browser URLs, extension URLs, `mailto:`, and `tel:`.
+3. It calls `/api/analyze-url` with the destination URL only.
+4. High-risk results redirect to `warning.html`.
+5. Medium-risk results allow the page to load and inject a caution banner.
+6. Low-risk results continue normally.
+
+## Universal Link Intelligence
+
+The content script extracts visible links from normal pages and search result pages. Search result annotation runs automatically on supported search engines. Page-wide link scanning is user-controlled from the popup and scans unique visible URLs with limited concurrency.
 
 ## Attack Explanation Mode
 
-The backend uses `attack_explanation_service.py` to inspect final reasons, grouped signals, threat-intel status, deep URL signals, and repeated-message counts. It prioritizes known-bad URLs, credential phishing, brand impersonation, lookalike domains, insecure credential collection, redirection, urgency pressure, repeated campaigns, and low-risk results.
+The attack explanation service uses existing reasons and signals to classify a likely attack type. It does not call an external AI model. It provides:
 
-## Local Development Boundary
+- Attack type
+- Attack category
+- Severity
+- Summary
+- How it works
+- What to avoid
+- Safer action
 
-The MVP runs locally. The extension calls `http://127.0.0.1:8000`, so no production server or external threat intelligence API is required.
+## Current Limitations
+
+- External threat intelligence APIs are placeholders only.
+- Machine learning models are not implemented yet.
+- This is a local MVP, not a production security product.
+- Browser UI structure can change, so search result annotation may need maintenance over time.

@@ -1,83 +1,60 @@
-# TrustTrace AI Roadmap
+# Roadmap
 
-## Phase 1: Clean MVP Foundation
+## Completed MVPs
 
-- Create the browser extension shell.
-- Create the FastAPI backend.
-- Add URL analysis with simple rule-based detection.
-- Return explainable reasons for each risk signal.
-- Document architecture, API design, privacy, and threat model.
+| MVP | Status | Summary |
+|---|---:|---|
+| MVP 1 | Complete | Clean Chrome Extension MV3 and FastAPI foundation. |
+| MVP 2 | Complete | URL phishing analysis with trust score, probability, and reasons. |
+| MVP 3 | Complete | Reputation and legitimacy layer for official trusted domains. |
+| MVP 4 | Complete | Visible page content scanning. |
+| MVP 5 | Complete | Fake login form and credential-harvesting detection. |
+| MVP 6 | Complete | User-controlled email/message threat detection with sender and repeat checks. |
+| MVP 7 | Complete | Pre-visit high-risk warning page and medium-risk caution banner. |
+| MVP 8 | Complete | Local threat intelligence, deep URL heuristics, universal link intelligence, and search result annotation. |
+| MVP 9 | Complete | Attack Explanation Mode. |
 
-## Phase 2: Browser Page Analysis
+## Future Work
 
-- Add MVP page content scanning for visible webpage text.
-- Combine URL risk and content risk into one explainable score.
-- Add MVP fake login form detection.
-- Detect suspicious login forms.
-- Identify password fields on insecure pages.
-- Flag visual impersonation patterns.
-- Add content-script based page scanning.
+### MVP 10: Personal Security Report Card
 
-## Phase 3: Email and Message Safety
+- Summarize recent local scans.
+- Show counts of trusted, caution, and high-risk scans.
+- Highlight most common attack types.
+- Keep privacy controls clear and local-first.
 
-- Add MVP email/message threat detection from selected or visible text.
-- Detect sender impersonation and brand/domain mismatches.
-- Detect suspicious links and display-text destination mismatches.
-- Track repeated similar messages locally using message hashes.
-- Analyze pasted emails or messages.
-- Detect scam language, urgency, payment pressure, and impersonation.
-- Add explainable message risk results.
+### Threat Intelligence Integrations
 
-## Phase 3.5: Reputation And Legitimacy Pipeline
+- Google Safe Browsing.
+- PhishTank.
+- OpenPhish cached feed.
+- URLHaus.
+- VirusTotal.
+- Local caching and rate-limit handling.
 
-- Add known threat-intelligence placeholder layer.
-- Add official domain verification and high-reputation domain checks.
-- Reduce false positives on legitimate trusted sites.
-- Add deep-analysis placeholders for URL ML, RDAP/domain age, Tranco, URLScan, and certificate reputation.
+### Reputation Integrations
 
-## Phase 4: Pre-Visit Protection
+- Tranco rank.
+- RDAP/domain age.
+- URLScan.io.
+- Certificate reputation.
+- Safer reputation weighting for false-positive reduction.
 
-- Add high-risk warning interstitial.
-- Add medium-risk caution banners.
-- Add temporary Proceed Anyway session bypass.
-- Add local high-risk URL/domain cache.
-- Keep pre-visit checks URL-only for privacy.
+### Machine Learning
 
-## Phase 4.5: Local Threat Intelligence And Deep URL Heuristics
+- Baseline phishing URL classifier.
+- Feature extraction dataset pipeline.
+- Explainable model-assisted scoring.
+- Model comparison against rule-based scoring.
 
-- Add a local MVP known-bad URL/domain blocklist.
-- Add future feed placeholders for OpenPhish, URLHaus, PhishTank, Google Safe Browsing, and host lists.
-- Add local homoglyph, punycode, typosquatting, entropy, suspicious TLD, IP-hostname, and login/security prefix checks.
-- Add Universal Link Intelligence for search-result annotation and page-wide visible link scans.
-- Support visible link extraction on search, message, and normal webpage contexts.
-- Add Attack Explanation Mode with rule-based attack type classification and safer-action guidance.
-- Keep official trusted domains low risk by suppressing weak false-positive signals.
-- Treat local known-bad matches as instant high risk.
+### Community And Product Features
 
-## Phase 5: OCR Screenshot Scam Analysis
+- Community threat intelligence reports.
+- QR code phishing scanner.
+- Screenshot/OCR scam analysis.
+- Settings page for privacy modes.
+- Extension packaging and release workflow.
 
-- Allow users to upload screenshots.
-- Extract visible text with OCR.
-- Analyze scam indicators in the extracted text.
+## Honest Scope
 
-## Phase 6: Machine Learning
-
-- Collect safe training datasets.
-- Train baseline phishing URL models.
-- Compare model results with rule-based detection.
-- Add explainability for model-assisted predictions.
-
-## Phase 7: Threat Intelligence Integrations
-
-- Add optional threat intelligence APIs.
-- Integrate PhishTank, OpenPhish cached feeds, Google Safe Browsing, URLhaus, and VirusTotal.
-- Add Tranco rank, RDAP/domain age, URLScan.io, and certificate reputation checks.
-- Cache results responsibly.
-- Keep user privacy controls clear and explicit.
-
-## Phase 8: Product Hardening
-
-- Add tests, logging, and error monitoring.
-- Improve extension UX.
-- Add settings for privacy and analysis modes.
-- Prepare packaging and deployment documentation.
+TrustTrace AI is currently a local, rule-based MVP. It is suitable for portfolio demonstration, local testing, and architecture discussion. It is not yet a production-grade security product.

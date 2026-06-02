@@ -1,49 +1,50 @@
 # Threat Model
 
-TrustTrace AI focuses on browser security risks that target everyday users.
+TrustTrace AI focuses on common browser-based phishing and scam risks.
 
-## Primary Threats
+## Threats Covered
 
-- Phishing websites that imitate trusted brands.
-- Fake login forms that steal usernames, passwords, or MFA codes.
-- Scam links sent through email, SMS, chat, or social media.
-- Sender impersonation using free email providers, lookalike domains, or phone numbers claiming to be trusted companies.
-- Repeated similar scam messages that may indicate a phishing campaign.
-- URLs that hide their destination with IP addresses, long paths, `@` symbols, confusing subdomains, or deceptive keywords.
-- URLs using punycode, homoglyphs, typosquatting, suspicious TLDs, high-entropy domains, or login/security prefixes.
-- Brand impersonation outside official domains, such as fake Apple, OpenAI, Claude, Gemini, Google, PayPal, or bank login pages.
-- High-risk links clicked before the user opens the popup.
-- Search results or ordinary webpages that include risky links alongside safe links.
-- Dark patterns that pressure users into unsafe actions.
-- Screenshot-based scams that ask users to scan QR codes, call fake support numbers, or enter credentials.
+| Threat | How TrustTrace AI responds |
+|---|---|
+| Phishing URLs | URL scoring, local blocklist, domain heuristics, warning page. |
+| Brand impersonation | Official domain verification and brand-outside-domain checks. |
+| Fake login forms | Password/email fields, suspicious submit text, form action checks. |
+| Suspicious email/message links | User-controlled message scan and link mismatch analysis. |
+| Sender impersonation | Free-email provider and claimed-brand/domain mismatch checks. |
+| Urgency/social engineering | Detects pressure language such as urgent, suspended, locked, final warning. |
+| Typosquatting/lookalikes | Detects punycode, homoglyphs, repeated letters, and similar brand domains. |
+| HTTP credential risks | Flags HTTP pages with account/login/payment/password behavior. |
+| Repeated scam campaigns | Uses local message hashes to identify repeated similar messages. |
+| Risky search/page links | Annotates search results and scans visible links on any page. |
 
-## MVP Risks Covered
+## Attack Explanation Mode
 
-The MVP covers URL-level phishing indicators, visible page content, fake login forms, and user-controlled email/message text scans. It does not inspect screenshots, files, downloads, full mailboxes, cookies, or network traffic.
+Attack Explanation Mode converts signals into educational guidance:
 
-MVP 6.5 adds a reputation and legitimacy layer to reduce false positives on official trusted domains. Brand names, hidden inputs, normal forms, and ordinary login wording are not enough by themselves to mark an official high-reputation site as suspicious.
+- What type of attack this may be.
+- How the attack works.
+- What the user should avoid doing.
+- A safer action.
 
-MVP 7 adds pre-visit protection. High-risk URLs are blocked with an interstitial, medium-risk URLs get a caution banner, and low-risk URLs open normally.
-
-MVP 8 adds local threat intelligence and deep URL heuristics. A local known-bad blocklist is treated as instant high-risk evidence for testing. Deep checks detect homoglyphs, punycode, typosquatting, suspicious TLDs, entropy, IP hostnames, and fake brand domains while official trusted domains suppress weak false-positive signals.
-
-MVP 8 also adds Universal Link Intelligence. Search result annotation warns beside visible results, and popup-driven page-wide link scanning summarizes visible links on normal webpages, message pages, blogs, shopping pages, and school sites.
-
-MVP 9 adds Attack Explanation Mode. It classifies likely attack patterns such as credential phishing, brand impersonation, lookalike domains, insecure credential collection, suspicious redirection, urgency pressure, known-bad URLs, and repeated scam campaigns.
+This is rule-based explainability, not an external AI model.
 
 ## Trust Boundaries
 
-- Browser extension: has access to the current tab URL when the popup runs.
-- Browser extension service worker: checks destination URLs during top-level navigation.
-- Browser extension: only scans selected or visible message text when the user clicks Scan Email/Message.
-- Browser extension: scans visible link URLs only when annotating search results or when the user clicks Scan Links on This Page.
-- Local backend: generates attack explanations from existing signals without external AI calls.
-- Local backend: receives user-controlled scan payloads and returns rule-based analysis.
+- Chrome extension: active tab URL, visible page text when scanning, visible links, and user-selected message text.
+- MV3 service worker: destination URL checks for navigation protection.
+- Local backend: receives scan payloads and returns rule-based analysis.
+- SQLite database: stores repeated-message hashes and short metadata.
 - External services: not used in the MVP.
-- External threat-intelligence, domain reputation, and ML integrations are placeholders only until explicitly configured in a future phase.
 
-## Security Considerations
+## Limitations
 
-- The API should stay local during MVP development.
-- Future remote deployments should add authentication, rate limiting, logging controls, and stricter CORS.
-- Future content analysis should avoid collecting sensitive page data unless the user explicitly requests it.
+- TrustTrace AI does not inspect downloads, files, or network traffic.
+- It does not scan QR codes or screenshots yet.
+- It does not use real-time external threat intelligence yet.
+- It does not use a trained ML phishing classifier yet.
+- Search engine page layouts can change and may require annotation maintenance.
+- A low-risk result does not guarantee a site is safe; it means the MVP checks did not find strong indicators.
+
+## Safety Notes
+
+This project is intended for portfolio demonstration and local security education. It should not be used as a sole production defense without additional testing, telemetry, external threat intelligence, and operational safeguards.
