@@ -85,6 +85,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return false;
   }
 
+  if (message?.type === "TRUSTTRACE_ANALYZE_SEARCH_RESULT") {
+    analyzeSearchResultUrl(message.url)
+      .then((result) => {
+        sendResponse({ ok: true, result });
+      })
+      .catch((error) => {
+        console.warn("TrustTrace AI search-result analysis unavailable.", error);
+        sendResponse({ ok: false, error: "Backend unavailable." });
+      });
+    return true;
+  }
+
+  if (message?.type === "TRUSTTRACE_OPEN_WARNING_FOR_URL") {
+    const tabId = sender.tab?.id;
+    if (!tabId || !message.url || !message.result) {
+      sendResponse({ ok: false });
+      return false;
+    }
+
+    redirectToWarning(tabId, message.url, message.result).then(() => {
+      sendResponse({ ok: true });
+    });
+    return true;
+  }
+
   return false;
 });
 
@@ -124,6 +149,19 @@ async function analyzeUrl(url) {
   }
 
   return response.json();
+}
+
+async function analyzeSearchResultUrl(url) {
+  const cachedResult = await getCachedHighRiskResult(url);
+  if (cachedResult) {
+    return cachedResult;
+  }
+
+  const result = await analyzeUrl(url);
+  if (isHighRisk(result)) {
+    await cacheHighRiskResult(url, result);
+  }
+  return result;
 }
 
 function shouldInspectUrl(url) {

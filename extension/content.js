@@ -1,4 +1,9 @@
 const MAX_VISIBLE_TEXT_LENGTH = 5000;
+const SEARCH_BADGE_ATTRIBUTE = "data-trusttrace-search-badge";
+const SEARCH_RESULT_ATTRIBUTE = "data-trusttrace-search-scanned";
+const MAX_SEARCH_RESULTS_TO_SCAN = 12;
+const searchResultCache = new Map();
+let searchScanTimer = null;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "SHOW_CAUTION_BANNER") {
@@ -22,6 +27,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   return true;
 });
+
+initSearchResultBadges();
 
 function getVisibleBodyText() {
   const bodyText = document.body?.innerText || "";
@@ -246,6 +253,252 @@ function showCautionBanner(result) {
   document.getElementById("trusttrace-open-popup")?.addEventListener("click", () => {
     chrome.runtime.sendMessage({ type: "TRUSTTRACE_OPEN_POPUP" });
   });
+}
+
+function initSearchResultBadges() {
+  if (!isGoogleSearchResultsPage()) {
+    return;
+  }
+
+  if (!document.body) {
+    window.addEventListener("DOMContentLoaded", initSearchResultBadges, { once: true });
+    return;
+  }
+
+  scanVisibleSearchResults();
+
+  const observer = new MutationObserver(() => {
+    window.clearTimeout(searchScanTimer);
+    searchScanTimer = window.setTimeout(scanVisibleSearchResults, 500);
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+}
+
+function isGoogleSearchResultsPage() {
+  return (
+    location.hostname === "www.google.com" ||
+    location.hostname === "google.com" ||
+    location.hostname.endsWith(".google.com")
+  ) && location.pathname === "/search";
+}
+
+function scanVisibleSearchResults() {
+  const results = collectGoogleSearchResultLinks();
+
+  results.forEach(({ link, targetUrl }) => {
+    if (link.getAttribute(SEARCH_RESULT_ATTRIBUTE) === targetUrl) {
+      return;
+    }
+
+    link.setAttribute(SEARCH_RESULT_ATTRIBUTE, targetUrl);
+    const badge = attachSearchResultBadge(link, targetUrl);
+    updateSearchBadge(badge, {
+      label: "Scanning",
+      level: "pending",
+      title: "TrustTrace AI is checking this result URL."
+    });
+
+    analyzeSearchResult(targetUrl)
+      .then((result) => {
+        updateSearchBadgeFromResult(badge, targetUrl, result);
+      })
+      .catch(() => {
+        updateSearchBadge(badge, {
+          label: "Offline",
+          level: "offline",
+          title: "TrustTrace AI backend is unavailable."
+        });
+      });
+  });
+}
+
+function collectGoogleSearchResultLinks() {
+  const seenUrls = new Set();
+  return Array.from(document.querySelectorAll("#search a[href]"))
+    .map((link) => ({ link, targetUrl: extractSearchResultUrl(link) }))
+    .filter(({ link, targetUrl }) => {
+      if (!targetUrl || seenUrls.has(targetUrl) || !isSearchResultLink(link, targetUrl)) {
+        return false;
+      }
+      seenUrls.add(targetUrl);
+      return true;
+    })
+    .slice(0, MAX_SEARCH_RESULTS_TO_SCAN);
+}
+
+function extractSearchResultUrl(link) {
+  try {
+    const hrefUrl = new URL(link.href);
+    if (hrefUrl.hostname.endsWith("google.com") && hrefUrl.pathname === "/url") {
+      const redirectedUrl = hrefUrl.searchParams.get("q") || hrefUrl.searchParams.get("url");
+      return redirectedUrl ? new URL(redirectedUrl).href : "";
+    }
+    return hrefUrl.href;
+  } catch (error) {
+    return "";
+  }
+}
+
+function isSearchResultLink(link, targetUrl) {
+  try {
+    const target = new URL(targetUrl);
+    const hasResultTitle = Boolean(link.querySelector("h3") || link.closest("[data-sokoban-container]")?.querySelector("h3"));
+    const isWebUrl = ["http:", "https:"].includes(target.protocol);
+
+    return hasResultTitle && isWebUrl && isVisible(link);
+  } catch (error) {
+    return false;
+  }
+}
+
+function attachSearchResultBadge(link, targetUrl) {
+  const existingBadge = link.parentElement?.querySelector(
+    `[${SEARCH_BADGE_ATTRIBUTE}="${cssEscape(targetUrl)}"]`
+  );
+  if (existingBadge) {
+    return existingBadge;
+  }
+
+  const badge = document.createElement("button");
+  badge.type = "button";
+  badge.setAttribute(SEARCH_BADGE_ATTRIBUTE, targetUrl);
+  badge.style.cssText = [
+    "display:inline-flex",
+    "align-items:center",
+    "gap:5px",
+    "margin-left:8px",
+    "padding:3px 8px",
+    "border-radius:999px",
+    "border:1px solid rgba(148,163,184,0.55)",
+    "font:600 11px/1.2 Arial,sans-serif",
+    "vertical-align:middle",
+    "cursor:default",
+    "transition:background 160ms ease,border-color 160ms ease,color 160ms ease,transform 160ms ease",
+    "box-shadow:0 2px 8px rgba(15,23,42,0.12)"
+  ].join(";");
+
+  const title = link.querySelector("h3") || link;
+  title.insertAdjacentElement("afterend", badge);
+  return badge;
+}
+
+async function analyzeSearchResult(targetUrl) {
+  if (searchResultCache.has(targetUrl)) {
+    return searchResultCache.get(targetUrl);
+  }
+
+  const response = await chrome.runtime.sendMessage({
+    type: "TRUSTTRACE_ANALYZE_SEARCH_RESULT",
+    url: targetUrl
+  });
+
+  if (!response?.ok) {
+    throw new Error(response?.error || "Search result analysis failed.");
+  }
+
+  searchResultCache.set(targetUrl, response.result);
+  return response.result;
+}
+
+function updateSearchBadgeFromResult(badge, targetUrl, result) {
+  const level = getSearchBadgeLevel(result);
+  const labels = {
+    trusted: "Trusted",
+    caution: "Caution",
+    high: "High Risk"
+  };
+
+  updateSearchBadge(badge, {
+    label: labels[level],
+    level,
+    title: buildSearchBadgeTitle(result)
+  });
+
+  if (level === "high") {
+    badge.style.cursor = "pointer";
+    badge.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      chrome.runtime.sendMessage({
+        type: "TRUSTTRACE_OPEN_WARNING_FOR_URL",
+        url: targetUrl,
+        result
+      });
+    });
+  }
+}
+
+function getSearchBadgeLevel(result) {
+  const trustScore = Number(result?.trust_score);
+  const probability = Number(result?.phishing_probability);
+
+  if (
+    trustScore <= 30 ||
+    probability >= 0.75 ||
+    (result?.risk_level === "high" && result?.confidence === "high")
+  ) {
+    return "high";
+  }
+
+  if ((trustScore > 30 && trustScore <= 60) || result?.risk_level === "medium") {
+    return "caution";
+  }
+
+  return "trusted";
+}
+
+function updateSearchBadge(badge, state) {
+  const styles = {
+    pending: {
+      text: "#334155",
+      background: "#f8fafc",
+      border: "rgba(148,163,184,0.65)"
+    },
+    trusted: {
+      text: "#065f46",
+      background: "#d1fae5",
+      border: "#34d399"
+    },
+    caution: {
+      text: "#78350f",
+      background: "#fef3c7",
+      border: "#f59e0b"
+    },
+    high: {
+      text: "#7f1d1d",
+      background: "#fee2e2",
+      border: "#ef4444"
+    },
+    offline: {
+      text: "#475569",
+      background: "#e2e8f0",
+      border: "#94a3b8"
+    }
+  };
+  const style = styles[state.level] || styles.pending;
+
+  badge.textContent = state.label;
+  badge.title = state.title;
+  badge.style.color = style.text;
+  badge.style.background = style.background;
+  badge.style.borderColor = style.border;
+}
+
+function buildSearchBadgeTitle(result) {
+  const probability = Math.round((Number(result?.phishing_probability) || 0) * 100);
+  const topReason = result?.reasons?.[0] ? ` Reason: ${result.reasons[0]}` : "";
+  return `TrustTrace AI: ${result?.risk_level || "low"} risk, trust score ${result?.trust_score ?? "N/A"}, phishing probability ${probability}%.${topReason}`;
+}
+
+function cssEscape(value) {
+  if (window.CSS?.escape) {
+    return window.CSS.escape(value);
+  }
+  return String(value).replaceAll("\"", "\\\"");
 }
 
 function escapeHtml(value) {
