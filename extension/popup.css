@@ -168,6 +168,15 @@ button {
   white-space: nowrap;
 }
 
+.protection-status {
+  display: grid;
+  gap: 5px;
+  margin-top: 10px;
+  color: #c7f9ef;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .icon-button,
 .primary-button,
 .secondary-button {

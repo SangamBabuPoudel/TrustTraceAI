@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>TrustTrace AI Pre-Visit Link Tests</title>
+    <style>
+      body {
+        max-width: 820px;
+        margin: 40px auto;
+        font-family: Arial, sans-serif;
+        line-height: 1.5;
+      }
+
+      li {
+        margin-bottom: 12px;
+      }
+
+      a {
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>TrustTrace AI Pre-Visit Protection Tests</h1>
+    <p>Click these links to test TrustTrace AI pre-visit protection.</p>
+
+    <ul>
+      <li><a href="https://www.apple.com">Safe official Apple link</a></li>
+      <li><a href="https://openai.com">Safe OpenAI link</a></li>
+      <li><a href="http://apple-login-security.example.com/verify">Fake Apple phishing link</a></li>
+      <li><a href="https://openai-login-verify.example.com/password">Fake OpenAI phishing link</a></li>
+      <li><a href="https://claude-security-login.example.com">Fake Claude phishing link</a></li>
+      <li><a href="https://bit.ly/3SuspiciousLink">Medium-risk shortened link test</a></li>
+    </ul>
+
+    <p>
+      Expected: Apple and OpenAI links open normally. Fake phishing links show
+      <code>warning.html</code>. Medium-risk links open with a yellow caution banner.
+      Proceed Anyway bypasses only the exact URL for this browser session.
+    </p>
+  </body>
+</html>

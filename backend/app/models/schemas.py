@@ -14,6 +14,23 @@ class ReputationSummary(BaseModel):
     reputation_score: int = Field(default=0, ge=0, le=100)
 
 
+class ThreatIntelSummary(BaseModel):
+    is_known_bad: bool = False
+    source: str = ""
+    reason: str = ""
+
+
+class DeepSignalSummary(BaseModel):
+    type: str
+    severity: str
+    message: str
+
+
+class DeepAnalysisSummary(BaseModel):
+    signals: list[DeepSignalSummary] = Field(default_factory=list)
+    score_delta: int = 0
+
+
 class AnalyzeUrlResponse(BaseModel):
     url: str
     risk_level: Literal["low", "medium", "high"]
@@ -23,6 +40,8 @@ class AnalyzeUrlResponse(BaseModel):
     confidence: Literal["low", "medium", "high"] = "medium"
     trust_signals: list[str] = Field(default_factory=list)
     reputation: ReputationSummary = Field(default_factory=ReputationSummary)
+    threat_intel: ThreatIntelSummary = Field(default_factory=ThreatIntelSummary)
+    deep_analysis: DeepAnalysisSummary = Field(default_factory=DeepAnalysisSummary)
 
 
 class PageFormMetadata(BaseModel):
@@ -58,6 +77,8 @@ class AnalyzePageResponse(BaseModel):
     confidence: Literal["low", "medium", "high"] = "medium"
     trust_signals: list[str] = Field(default_factory=list)
     reputation: ReputationSummary = Field(default_factory=ReputationSummary)
+    threat_intel: ThreatIntelSummary = Field(default_factory=ThreatIntelSummary)
+    deep_analysis: DeepAnalysisSummary = Field(default_factory=DeepAnalysisSummary)
 
 
 class MessageLink(BaseModel):

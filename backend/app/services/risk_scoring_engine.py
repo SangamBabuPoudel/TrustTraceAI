@@ -4,7 +4,7 @@ from app.services.url_feature_extractor import UrlFeatures
 
 
 SIGNAL_WEIGHTS = {
-    "uses_http": 15,
+    "uses_http": 25,
     "is_long_url": 10,
     "suspicious_keywords": 8,
     "has_ip_address": 25,

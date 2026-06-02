@@ -1,0 +1,148 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #fff7f7;
+  background:
+    radial-gradient(circle at 18% 8%, rgba(248, 113, 113, 0.22), transparent 30%),
+    linear-gradient(145deg, #16090d, #250d17 52%, #09111f);
+}
+
+.warning-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 28px;
+}
+
+.warning-card {
+  width: min(760px, 100%);
+  padding: 28px;
+  border: 1px solid rgba(248, 113, 113, 0.34);
+  border-radius: 20px;
+  background: rgba(17, 24, 39, 0.82);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.38);
+}
+
+.warning-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 18px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.eyebrow,
+.details span,
+.risk-grid span {
+  color: #fecaca;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+h1 {
+  margin: 14px 0 0;
+  font-size: clamp(32px, 5vw, 52px);
+  line-height: 1;
+}
+
+.subtitle {
+  max-width: 620px;
+  color: #f3c4c4;
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+.details,
+.risk-grid,
+section {
+  margin-top: 20px;
+}
+
+.details strong {
+  display: block;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+  color: #fff;
+  font-size: 15px;
+}
+
+.risk-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.risk-grid div {
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.risk-grid strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 22px;
+}
+
+h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+li {
+  margin-bottom: 7px;
+  color: #fee2e2;
+}
+
+.privacy-note {
+  margin-top: 18px;
+  color: #fca5a5;
+  font-size: 13px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+button {
+  min-height: 46px;
+  padding: 11px 16px;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+}
+
+.safe-button {
+  background: #e5e7eb;
+  color: #111827;
+}
+
+.danger-button {
+  background: #dc2626;
+  color: #fff;
+}
+
+@media (max-width: 680px) {
+  .risk-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .actions {
+    flex-direction: column;
+  }
+}

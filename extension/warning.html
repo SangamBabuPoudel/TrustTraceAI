@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TrustTrace AI Warning</title>
+    <link rel="stylesheet" href="warning.css">
+  </head>
+  <body>
+    <main class="warning-shell">
+      <section class="warning-card">
+        <div class="warning-icon" aria-hidden="true">!</div>
+        <p class="eyebrow">Pre-visit protection</p>
+        <h1>TrustTrace AI High-Risk Warning</h1>
+        <p class="subtitle">This website may be attempting to steal information or impersonate a trusted service.</p>
+
+        <div class="details">
+          <span>Flagged URL</span>
+          <strong id="original-url">Loading...</strong>
+        </div>
+
+        <div class="risk-grid">
+          <div>
+            <span>Risk Level</span>
+            <strong id="risk-level">High</strong>
+          </div>
+          <div>
+            <span>Trust Score</span>
+            <strong id="trust-score">0</strong>
+          </div>
+          <div>
+            <span>Phishing Probability</span>
+            <strong id="phishing-probability">0%</strong>
+          </div>
+          <div>
+            <span>Detection Confidence</span>
+            <strong id="confidence">High</strong>
+          </div>
+        </div>
+
+        <section>
+          <h2>Why this was blocked</h2>
+          <ul id="reasons"></ul>
+        </section>
+
+        <p class="privacy-note">Only the destination URL was checked for this pre-visit warning. Page content was not collected.</p>
+
+        <div class="actions">
+          <button id="go-back" class="safe-button" type="button">Go Back to Safety</button>
+          <button id="proceed" class="danger-button" type="button">Proceed Anyway</button>
+        </div>
+      </section>
+    </main>
+
+    <script src="warning.js"></script>
+  </body>
+</html>

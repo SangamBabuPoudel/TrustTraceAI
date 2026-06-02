@@ -430,6 +430,15 @@ function renderReasons(result, riskLevel) {
 
 function getSignalGroups(result) {
   const signals = result.signals || {};
+  const deepSignals = (result.deep_analysis?.signals || []).map((signal) => {
+    if (typeof signal === "string") {
+      return signal;
+    }
+    return signal.message || "Deep URL heuristic signal detected.";
+  });
+  const threatIntelSignals = result.threat_intel?.is_known_bad
+    ? [result.threat_intel.reason || "URL matched configured local threat intelligence."]
+    : [];
 
   if ("sender_signals" in signals || "message_signals" in signals) {
     return [
@@ -441,6 +450,8 @@ function getSignalGroups(result) {
   }
 
   return [
+    { title: "Threat Intelligence", reasons: threatIntelSignals },
+    { title: "Deep URL Signals", reasons: deepSignals },
     { title: "URL signals", reasons: signals.url_signals || [] },
     { title: "Page content signals", reasons: signals.content_signals || [] },
     { title: "Form signals", reasons: signals.form_signals || [] }
@@ -779,6 +790,14 @@ function buildReport() {
   const trustSignals = latestResult?.trust_signals?.length
     ? latestResult.trust_signals.join("\n- ")
     : "None";
+  const threatIntelSignals = latestResult?.threat_intel?.is_known_bad
+    ? latestResult.threat_intel.reason || "URL matched configured local threat intelligence."
+    : "None";
+  const deepUrlSignals = latestResult?.deep_analysis?.signals?.length
+    ? latestResult.deep_analysis.signals
+        .map((signal) => (typeof signal === "string" ? signal : signal.message))
+        .join("\n- ")
+    : "None";
 
   return `TrustTrace AI Scan Report
 Scan Type: ${latestScanType}
@@ -792,6 +811,10 @@ Reasons:
 - ${reasons}
 Trust Signals:
 - ${trustSignals}
+Threat Intelligence:
+- ${threatIntelSignals}
+Deep URL Signals:
+- ${deepUrlSignals}
 URL Signals:
 - ${urlSignals}
 Page Content Signals:

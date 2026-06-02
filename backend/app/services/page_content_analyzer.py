@@ -32,7 +32,7 @@ CONTENT_RULES = (
     ),
     ContentRule(
         name="credential_language",
-        keywords=("password", "login", "verify", "confirm identity", "security code"),
+        keywords=("password", "login", "sign in", "sign up", "verify", "confirm identity", "security code"),
         weight=20,
         explanation="The page asks about credentials or identity verification.",
     ),

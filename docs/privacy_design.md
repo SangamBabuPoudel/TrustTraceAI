@@ -11,9 +11,11 @@ TrustTrace AI should be privacy-first by default.
 - Nearby message warnings use lightweight browser-side previews and short snippets; they are not included in the main scan unless the user chooses one.
 - TrustTrace AI does not automatically scan a full mailbox or background email content.
 - No external threat APIs: the MVP does not send URLs to third-party services.
-- Reputation, threat-intelligence, RDAP, Tranco, URLScan, certificate, and ML checks are local placeholders only in MVP 6.5.
+- Local threat intelligence uses a small built-in MVP blocklist and does not fetch remote feeds.
+- Reputation, threat-intelligence, RDAP, Tranco, URLScan, certificate, and ML checks are local placeholders only in the MVP pipeline.
 - No account system: the MVP does not require user identity.
 - No tracking: the MVP does not include analytics, ads, or behavioral tracking.
+- Pre-visit protection sends only the destination URL to the local backend. Page content is not collected for pre-visit warnings.
 
 ## Message Scan Storage
 
@@ -28,7 +30,15 @@ Repeated message detection uses a local SQLite database at `backend/trusttrace.d
 
 - Official domain verification uses a local trusted-domain list.
 - High-reputation decisions use a local MVP allowlist for testing.
+- Known-bad decisions use a local MVP blocklist for testing.
+- Deep URL heuristics run locally for homoglyphs, punycode, typosquatting, entropy, suspicious TLDs, and suspicious domain structure.
 - No URLs are sent to PhishTank, OpenPhish, Google Safe Browsing, URLhaus, VirusTotal, Tranco, RDAP, URLScan, or certificate reputation services yet.
+
+## Pre-Visit Cache And Bypass
+
+- High-risk pre-visit detections are cached locally in Chrome storage with URL, hostname, risk score, reasons, and timestamp.
+- Proceed Anyway stores a temporary session allow decision for the exact URL only.
+- The bypass is not a permanent whitelist.
 
 ## Future Privacy Requirements
 

@@ -17,6 +17,7 @@ Response:
 `POST /api/analyze-url`
 
 This endpoint is preserved for URL-only analysis.
+The MVP 7 service worker also uses this endpoint for pre-visit URL-only checks.
 
 Request:
 
@@ -42,6 +43,15 @@ Response:
     "is_high_reputation_domain": false,
     "matched_brand": "",
     "reputation_score": 50
+  },
+  "threat_intel": {
+    "is_known_bad": false,
+    "source": "none",
+    "reason": "No local known-bad match."
+  },
+  "deep_analysis": {
+    "signals": [],
+    "score_delta": 0
   }
 }
 ```
@@ -146,7 +156,7 @@ Response:
 - Too many subdomains.
 - `@` symbol in the URL.
 - Known URL shorteners such as `bit.ly`, `tinyurl.com`, `t.co`, `goo.gl`, `ow.ly`, `is.gd`, `buff.ly`, and `rebrand.ly`.
-- Suspicious top-level domains such as `.xyz`, `.top`, `.click`, `.work`, `.zip`, `.country`, `.stream`, `.gq`, `.tk`, and `.ml`.
+- Suspicious top-level domains such as `.xyz`, `.top`, `.click`, `.work`, `.zip`, `.country`, `.stream`, `.gq`, `.tk`, `.ml`, `.ga`, `.cf`, `.loan`, `.party`, `.download`, and `.gdn`.
 - Brand impersonation keywords such as `paypal`, `amazon`, `apple`, `microsoft`, `google`, `netflix`, `facebook`, `instagram`, `bankofamerica`, `chase`, and `wells-fargo`.
 - Encoded characters such as `%2F`.
 - Multiple slashes after the hostname.
@@ -219,9 +229,11 @@ The MVP scoring engine uses an evidence-based multi-layer pipeline. The final sc
 
 Layer 1: known threat-intelligence placeholders for PhishTank, OpenPhish cached feeds, Google Safe Browsing, URLhaus, and VirusTotal. These return neutral `not_configured` results until future integrations are added.
 
+Layer 1 also includes a local MVP known-bad URL/domain blocklist. A local blocklist match is treated as high risk with high confidence and should trigger the pre-visit warning page.
+
 Layer 2: reputation and legitimacy checks for official trusted brand domains, high-reputation MVP domains, Tranco, RDAP/domain age, URLScan, and certificate reputation placeholders.
 
-Layer 3: ML and deep-analysis placeholders plus local checks for homoglyphs, brand spoofing, suspicious TLDs, suspicious subdomain depth, and lookalike domains.
+Layer 3: ML and deep-analysis placeholders plus local checks for homoglyphs, punycode, typosquatting, domain entropy, IP hostnames, brand spoofing, suspicious TLDs, suspicious subdomain depth, and lookalike login/security prefixes.
 
 - `phishing_probability` is the capped risk score divided by `100`.
 - `trust_score` is `100` minus the capped risk score.
@@ -230,6 +242,24 @@ Layer 3: ML and deep-analysis placeholders plus local checks for homoglyphs, bra
 - `trust_signals` explain legitimacy indicators such as official domains or local high-reputation matches.
 
 Brand impersonation is suspicious only when the brand appears outside the official domain. Hidden inputs, normal forms, brand names, and ordinary login/account wording are not enough by themselves to mark official high-reputation sites suspicious.
+
+Known-bad test URLs such as `http://apple-login-security.example.com/verify`, `https://openai-login-verify.example.com/password`, `https://claude-security-login.example.com`, and `https://gemini-google-verify-account.xyz/login` are included in the local blocklist for MVP testing only. No external feed is fetched.
+
+### HTTP / Not Secure Pages
+
+HTTP alone is a caution signal, not automatic phishing. A plain HTTP page with no other suspicious signals should usually remain low or medium risk, with a moderately reduced trust score.
+
+HTTP becomes more serious when combined with login, account, password, payment, billing, bank, or verification context. HTTP pages with password or credential-entry forms are treated as high risk because credentials would be submitted from an unencrypted page.
+
+### Pre-Visit Warning Thresholds
+
+The Chrome extension uses `/api/analyze-url` before or during top-level navigation:
+
+- High-risk interstitial when `trust_score <= 30`, `phishing_probability >= 0.75`, or `risk_level == "high"` with `confidence == "high"`.
+- Medium-risk caution banner when `trust_score` is between `31` and `60`, or `risk_level == "medium"`.
+- Low-risk URLs open normally.
+
+Pre-visit checks send only the destination URL. Page content is not collected for warning interstitials.
 
 For `/api/analyze-page`, local development URLs skip URL risk scoring but still run page content and form analysis. This makes it possible to test suspicious local HTML pages served from `localhost` or `127.0.0.1`.
 

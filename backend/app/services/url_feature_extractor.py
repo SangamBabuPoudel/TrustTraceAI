@@ -15,6 +15,12 @@ SUSPICIOUS_KEYWORDS = {
     "bank",
     "password",
     "refund",
+    "payment",
+    "billing",
+    "signin",
+    "signup",
+    "sign-in",
+    "sign-up",
 }
 
 URL_SHORTENER_DOMAINS = {
@@ -39,6 +45,12 @@ SUSPICIOUS_TLDS = {
     ".gq",
     ".tk",
     ".ml",
+    ".ga",
+    ".cf",
+    ".loan",
+    ".party",
+    ".download",
+    ".gdn",
 }
 
 BRAND_IMPERSONATION_KEYWORDS = {

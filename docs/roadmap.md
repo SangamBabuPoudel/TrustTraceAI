@@ -35,20 +35,36 @@
 - Reduce false positives on legitimate trusted sites.
 - Add deep-analysis placeholders for URL ML, RDAP/domain age, Tranco, URLScan, and certificate reputation.
 
-## Phase 4: OCR Screenshot Scam Analysis
+## Phase 4: Pre-Visit Protection
+
+- Add high-risk warning interstitial.
+- Add medium-risk caution banners.
+- Add temporary Proceed Anyway session bypass.
+- Add local high-risk URL/domain cache.
+- Keep pre-visit checks URL-only for privacy.
+
+## Phase 4.5: Local Threat Intelligence And Deep URL Heuristics
+
+- Add a local MVP known-bad URL/domain blocklist.
+- Add future feed placeholders for OpenPhish, URLHaus, PhishTank, Google Safe Browsing, and host lists.
+- Add local homoglyph, punycode, typosquatting, entropy, suspicious TLD, IP-hostname, and login/security prefix checks.
+- Keep official trusted domains low risk by suppressing weak false-positive signals.
+- Treat local known-bad matches as instant high risk.
+
+## Phase 5: OCR Screenshot Scam Analysis
 
 - Allow users to upload screenshots.
 - Extract visible text with OCR.
 - Analyze scam indicators in the extracted text.
 
-## Phase 5: Machine Learning
+## Phase 6: Machine Learning
 
 - Collect safe training datasets.
 - Train baseline phishing URL models.
 - Compare model results with rule-based detection.
 - Add explainability for model-assisted predictions.
 
-## Phase 6: Threat Intelligence Integrations
+## Phase 7: Threat Intelligence Integrations
 
 - Add optional threat intelligence APIs.
 - Integrate PhishTank, OpenPhish cached feeds, Google Safe Browsing, URLhaus, and VirusTotal.
@@ -56,7 +72,7 @@
 - Cache results responsibly.
 - Keep user privacy controls clear and explicit.
 
-## Phase 7: Product Hardening
+## Phase 8: Product Hardening
 
 - Add tests, logging, and error monitoring.
 - Improve extension UX.

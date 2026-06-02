@@ -1,6 +1,12 @@
 const MAX_VISIBLE_TEXT_LENGTH = 5000;
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message?.type === "SHOW_CAUTION_BANNER") {
+    showCautionBanner(message.result);
+    sendResponse({ ok: true });
+    return false;
+  }
+
   if (message?.type !== "TRUSTTRACE_COLLECT_PAGE") {
     return false;
   }
@@ -190,4 +196,63 @@ function isVisible(element) {
   const rect = element.getBoundingClientRect();
   const style = window.getComputedStyle(element);
   return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+}
+
+function showCautionBanner(result) {
+  const existingBanner = document.getElementById("trusttrace-caution-banner");
+  if (existingBanner) {
+    existingBanner.remove();
+  }
+
+  const banner = document.createElement("div");
+  banner.id = "trusttrace-caution-banner";
+  banner.style.cssText = [
+    "position: fixed",
+    "top: 0",
+    "left: 0",
+    "right: 0",
+    "z-index: 2147483647",
+    "padding: 12px 16px",
+    "background: #fef3c7",
+    "color: #422006",
+    "border-bottom: 2px solid #f59e0b",
+    "box-shadow: 0 8px 24px rgba(0,0,0,0.18)",
+    "font-family: Arial, sans-serif",
+    "font-size: 14px",
+    "line-height: 1.4"
+  ].join(";");
+
+  const reasons = (result?.reasons || []).slice(0, 2);
+  const probability = Math.round((Number(result?.phishing_probability) || 0) * 100);
+
+  banner.innerHTML = `
+    <div style="display:flex; gap:12px; align-items:flex-start; justify-content:space-between;">
+      <div>
+        <strong>TrustTrace AI caution: this page has some suspicious signals.</strong>
+        <div>Trust score: ${result?.trust_score ?? "N/A"} · Phishing probability: ${probability}%</div>
+        ${reasons.length ? `<ul style="margin:6px 0 0; padding-left:18px;">${reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join("")}</ul>` : ""}
+      </div>
+      <div style="display:flex; gap:8px; flex:0 0 auto;">
+        <button id="trusttrace-open-popup" style="padding:7px 10px; border:1px solid #92400e; border-radius:8px; background:#fffbeb; color:#422006; cursor:pointer;">Open TrustTrace AI</button>
+        <button id="trusttrace-dismiss-caution" style="padding:7px 10px; border:1px solid #92400e; border-radius:8px; background:#92400e; color:#fff; cursor:pointer;">Dismiss</button>
+      </div>
+    </div>
+  `;
+
+  document.documentElement.appendChild(banner);
+  document.getElementById("trusttrace-dismiss-caution")?.addEventListener("click", () => {
+    banner.remove();
+  });
+  document.getElementById("trusttrace-open-popup")?.addEventListener("click", () => {
+    chrome.runtime.sendMessage({ type: "TRUSTTRACE_OPEN_POPUP" });
+  });
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll("\"", "&quot;")
+    .replaceAll("'", "&#039;");
 }

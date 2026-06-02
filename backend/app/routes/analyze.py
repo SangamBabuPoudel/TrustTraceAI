@@ -9,7 +9,10 @@ from app.models.schemas import (
     AnalyzePageSignals,
     AnalyzeUrlRequest,
     AnalyzeUrlResponse,
+    DeepAnalysisSummary,
+    DeepSignalSummary,
     ReputationSummary,
+    ThreatIntelSummary,
 )
 from app.services.deep_analysis_service import analyze_url_deep
 from app.services.explanation_engine import build_explanations
@@ -21,7 +24,7 @@ from app.services.page_content_analyzer import analyze_page_content
 from app.services.risk_scoring_engine import score_url_risk
 from app.services.sender_identity_analyzer import analyze_sender_identity
 from app.services.reputation_service import ReputationResult, analyze_url_reputation
-from app.services.threat_intel_service import check_all_threat_intel
+from app.services.threat_intel_service import get_threat_intel_summary
 from app.services.url_feature_extractor import extract_url_features
 
 
@@ -41,6 +44,8 @@ def analyze_url(payload: AnalyzeUrlRequest) -> AnalyzeUrlResponse:
         confidence=url_pipeline["confidence"],
         trust_signals=url_pipeline["trust_signals"],
         reputation=url_pipeline["reputation"],
+        threat_intel=url_pipeline["threat_intel"],
+        deep_analysis=url_pipeline["deep_analysis"],
     )
 
 
@@ -99,6 +104,8 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
             confidence="high" if combined_points >= 60 else "medium",
             trust_signals=[],
             reputation=_reputation_summary(url_pipeline["raw_reputation"]),
+            threat_intel=url_pipeline["threat_intel"],
+            deep_analysis=url_pipeline["deep_analysis"],
         )
 
     form_analysis = analyze_forms(
@@ -122,6 +129,15 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
         has_suspicious_url=bool(url_pipeline["reasons"]),
         has_suspicious_content=content_analysis.has_account_verification_language,
     )
+    combined_points = max(combined_points, url_pipeline["points"])
+    if url_features.uses_http and content_analysis.has_account_verification_language:
+        combined_points = max(combined_points, 45)
+    if url_features.uses_http and form_analysis.has_password_form:
+        combined_points = max(combined_points, 85)
+        if not any("unencrypted HTTP page" in reason for reason in form_analysis.reasons):
+            form_analysis.reasons.append(
+                "Password or credential entry was detected on an unencrypted HTTP page."
+            )
     if trusted_context and form_analysis.risk_score == 0 and effective_content_score == 0:
         combined_points = min(combined_points, 5)
 
@@ -143,6 +159,8 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
         confidence=url_pipeline["confidence"],
         trust_signals=url_pipeline["trust_signals"],
         reputation=url_pipeline["reputation"],
+        threat_intel=url_pipeline["threat_intel"],
+        deep_analysis=url_pipeline["deep_analysis"],
     )
 
 
@@ -224,9 +242,9 @@ def analyze_message(payload: AnalyzeMessageRequest) -> AnalyzeMessageResponse:
 def _analyze_url_with_pipeline(url: str) -> dict:
     features = extract_url_features(url)
     reputation = analyze_url_reputation(url)
-    threat_intel_results = check_all_threat_intel(url)
+    threat_intel = get_threat_intel_summary(url)
     deep_analysis = analyze_url_deep(url, reputation)
-    known_bad = any(result["is_known_bad"] for result in threat_intel_results)
+    known_bad = threat_intel["is_known_bad"]
 
     if features.is_local_development:
         return {
@@ -239,6 +257,8 @@ def _analyze_url_with_pipeline(url: str) -> dict:
             "trust_signals": [],
             "reputation": _reputation_summary(reputation),
             "raw_reputation": reputation,
+            "threat_intel": _threat_intel_summary(threat_intel),
+            "deep_analysis": DeepAnalysisSummary(),
         }
 
     base_score = score_url_risk(features)
@@ -248,7 +268,7 @@ def _analyze_url_with_pipeline(url: str) -> dict:
 
     if known_bad:
         points = 100
-        reasons.insert(0, "Known bad URL match from configured threat intelligence.")
+        reasons.insert(0, threat_intel["reason"])
     else:
         reasons.extend(deep_analysis.reasons)
         points = max(points, deep_analysis.risk_score)
@@ -256,8 +276,26 @@ def _analyze_url_with_pipeline(url: str) -> dict:
         has_fake_brand = bool(reputation.reputation_warnings)
         has_credential_context = bool(
             set(features.suspicious_keywords)
-            & {"login", "verify", "account", "secure", "update", "password", "bank"}
+            & {
+                "login",
+                "signin",
+                "signup",
+                "sign-in",
+                "sign-up",
+                "verify",
+                "account",
+                "secure",
+                "update",
+                "password",
+                "payment",
+                "billing",
+                "bank",
+            }
         )
+        if features.uses_http:
+            points = max(points, 25)
+        if features.uses_http and has_credential_context:
+            points = max(points, 45)
         if has_fake_brand and has_credential_context:
             points = max(points, 85)
         elif has_fake_brand:
@@ -300,6 +338,8 @@ def _analyze_url_with_pipeline(url: str) -> dict:
         "trust_signals": trust_signals,
         "reputation": _reputation_summary(reputation),
         "raw_reputation": reputation,
+        "threat_intel": _threat_intel_summary(threat_intel),
+        "deep_analysis": _deep_analysis_summary(deep_analysis),
     }
 
 
@@ -309,6 +349,28 @@ def _reputation_summary(reputation: ReputationResult) -> ReputationSummary:
         is_high_reputation_domain=reputation.is_high_reputation_domain,
         matched_brand=reputation.matched_brand,
         reputation_score=reputation.reputation_score,
+    )
+
+
+def _threat_intel_summary(threat_intel: dict) -> ThreatIntelSummary:
+    return ThreatIntelSummary(
+        is_known_bad=threat_intel.get("is_known_bad", False),
+        source=threat_intel.get("source", ""),
+        reason=threat_intel.get("reason", ""),
+    )
+
+
+def _deep_analysis_summary(deep_analysis) -> DeepAnalysisSummary:
+    return DeepAnalysisSummary(
+        signals=[
+            DeepSignalSummary(
+                type=signal.type,
+                severity=signal.severity,
+                message=signal.message,
+            )
+            for signal in deep_analysis.deep_signals
+        ],
+        score_delta=deep_analysis.deep_score_delta,
     )
 
 

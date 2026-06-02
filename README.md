@@ -2,11 +2,13 @@
 
 TrustTrace AI is an explainable browser security extension for detecting phishing websites, scam links, fake login forms, suspicious emails/messages, malicious URLs, OCR screenshot scams, and dark patterns.
 
-This repository currently contains a clean local MVP foundation. It uses a Chrome Extension Manifest V3 popup and a FastAPI backend with simple rule-based URL, visible page content, fake login form, and user-controlled email/message analysis. Machine learning and threat intelligence APIs are intentionally not included yet.
+This repository currently contains a clean local MVP foundation. It uses a Chrome Extension Manifest V3 popup and a FastAPI backend with rule-based URL, visible page content, fake login form, user-controlled email/message analysis, local threat intelligence, and deep URL heuristics. Machine learning and external threat intelligence APIs are intentionally not included yet.
 
 ## Problem Statement
 
 Phishing and scam websites often rely on small signals that users can miss: insecure HTTP pages, deceptive keywords, long URLs, IP-based links, excessive subdomains, and confusing symbols. TrustTrace AI aims to make those signals visible, explainable, and easy to understand.
+
+HTTP / Not Secure pages are treated as caution signals rather than automatic phishing. HTTP combined with login, password, account, payment, billing, bank, or verification behavior is considered much more serious.
 
 ## Key Features
 
@@ -23,6 +25,10 @@ Phishing and scam websites often rely on small signals that users can miss: inse
 - Nearby threat previews without combining messages into one report.
 - Sender impersonation, suspicious link, and repeated message detection.
 - Multi-layer reputation and legitimacy pipeline to reduce false positives.
+- Local MVP known-bad URL/domain blocklist for safe testing.
+- Deep URL heuristics for homoglyphs, punycode, typosquatting, entropy, suspicious TLDs, and brand spoofing.
+- Pre-visit high-risk warning interstitial for dangerous URLs.
+- Medium-risk caution banner after page load.
 - Local trusted-domain and high-reputation domain checks.
 - Explainable reasons for detected risk signals.
 - Beginner-readable modular code.
@@ -47,15 +53,15 @@ Included:
 - Local-only backend.
 - Rule-based risk scoring.
 - Threat-intelligence and ML integration placeholders.
+- Local blocklist and deep URL/domain heuristic checks.
 - Explainable output.
 - Documentation for architecture, API design, privacy, roadmap, and threat model.
 
 Not included yet:
 
 - Machine learning.
-- Threat intelligence APIs.
+- External threat intelligence APIs.
 - Screenshot OCR.
-- Email/message analysis.
 - Production deployment.
 
 ## Folder Structure
@@ -90,6 +96,7 @@ TrustTraceAI/
         deep_analysis_service.py
       data/
         trusted_domains.py
+        local_blocklist.py
       database/
         db.py
         models.py
@@ -175,13 +182,23 @@ Then open `http://127.0.0.1:5500/extension/test-scam-message.html`, enter `googl
 
 TrustTrace AI does not scan a full mailbox automatically. The user chooses which visible message to analyze deeply.
 
+Pre-visit protection test page:
+
+```text
+http://127.0.0.1:5500/extension/test-previsit-links.html
+```
+
+The extension checks only the destination URL before navigation. High-risk links open `warning.html`, medium-risk links load with a yellow caution banner, and safe official domains open normally. Proceed Anyway creates a temporary session bypass for the exact URL only.
+
 ## Roadmap
 
 - Phase 1: Clean MVP foundation.
 - Phase 2: Page content scanning, fake login form detection, and browser page analysis.
 - Phase 3: User-controlled email and message scam detection with sender and repeat checks.
 - Phase 3.5: Multi-layer reputation and legitimacy pipeline.
-- Phase 4: OCR screenshot scam analysis.
-- Phase 5: Machine learning experiments.
-- Phase 6: Optional threat intelligence integrations.
-- Phase 7: Product hardening and deployment preparation.
+- Phase 4: Pre-visit high-risk warning and medium-risk caution banners.
+- Phase 4.5: Local threat intelligence and deep URL heuristics.
+- Phase 5: OCR screenshot scam analysis.
+- Phase 6: Machine learning experiments.
+- Phase 7: Optional threat intelligence integrations.
+- Phase 8: Product hardening and deployment preparation.

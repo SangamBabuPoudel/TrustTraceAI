@@ -3,8 +3,8 @@
   "name": "TrustTrace AI",
   "description": "Explainable phishing and scam URL detection for the browser.",
   "version": "0.1.0",
-  "permissions": ["activeTab", "tabs", "scripting"],
-  "host_permissions": ["http://127.0.0.1:8000/*"],
+  "permissions": ["activeTab", "tabs", "scripting", "storage", "webNavigation"],
+  "host_permissions": ["http://127.0.0.1:8000/*", "http://*/*", "https://*/*"],
   "action": {
     "default_popup": "popup.html",
     "default_title": "TrustTrace AI"
