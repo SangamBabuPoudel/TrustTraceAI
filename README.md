@@ -2,7 +2,7 @@
 
 TrustTrace AI is an explainable browser security extension for detecting phishing websites, scam links, fake login forms, suspicious emails/messages, malicious URLs, OCR screenshot scams, and dark patterns.
 
-This repository currently contains a clean local MVP foundation. It uses a Chrome Extension Manifest V3 popup and a FastAPI backend with rule-based URL, visible page content, fake login form, user-controlled email/message analysis, local threat intelligence, deep URL heuristics, and universal visible-link scanning. Machine learning and external threat intelligence APIs are intentionally not included yet.
+This repository currently contains a clean local MVP foundation. It uses a Chrome Extension Manifest V3 popup and a FastAPI backend with rule-based URL, visible page content, fake login form, user-controlled email/message analysis, local threat intelligence, deep URL heuristics, universal visible-link scanning, and Attack Explanation Mode. Machine learning and external threat intelligence APIs are intentionally not included yet.
 
 ## Problem Statement
 
@@ -28,6 +28,7 @@ HTTP / Not Secure pages are treated as caution signals rather than automatic phi
 - Local MVP known-bad URL/domain blocklist for safe testing.
 - Deep URL heuristics for homoglyphs, punycode, typosquatting, entropy, suspicious TLDs, and brand spoofing.
 - Universal Link Intelligence for search-result annotation and page-wide visible link scans.
+- Attack Explanation Mode with attack type, how-it-works reasoning, what-to-avoid guidance, and safer action recommendations.
 - Pre-visit high-risk warning interstitial for dangerous URLs.
 - Medium-risk caution banner after page load.
 - Local trusted-domain and high-reputation domain checks.
@@ -56,6 +57,7 @@ Included:
 - Threat-intelligence and ML integration placeholders.
 - Local blocklist and deep URL/domain heuristic checks.
 - Search result annotation and page-wide visible link scanning.
+- Rule-based explainable attack classification.
 - Explainable output.
 - Documentation for architecture, API design, privacy, roadmap, and threat model.
 
@@ -200,6 +202,14 @@ http://127.0.0.1:5500/extension/test-universal-links.html
 
 Open the popup and click Scan Links on This Page. TrustTrace AI scans visible link URLs only, summarizes trusted/caution/high-risk links, and lists the riskiest links with explanations. Search result annotation also adds small TrustTrace badges to visible results on Google, Bing, DuckDuckGo, and Yahoo without collecting the search query.
 
+Attack Explanation Mode test page:
+
+```text
+http://127.0.0.1:5500/extension/test-attack-explanations.html
+```
+
+Scan the page, links, or included fake message to see attack types such as credential phishing, brand impersonation, typosquatting, insecure credential collection, and repeated scam/campaign behavior.
+
 ## Roadmap
 
 - Phase 1: Clean MVP foundation.
@@ -207,7 +217,7 @@ Open the popup and click Scan Links on This Page. TrustTrace AI scans visible li
 - Phase 3: User-controlled email and message scam detection with sender and repeat checks.
 - Phase 3.5: Multi-layer reputation and legitimacy pipeline.
 - Phase 4: Pre-visit high-risk warning and medium-risk caution banners.
-- Phase 4.5: Local threat intelligence, deep URL heuristics, and universal visible-link intelligence.
+- Phase 4.5: Local threat intelligence, deep URL heuristics, universal visible-link intelligence, and Attack Explanation Mode.
 - Phase 5: OCR screenshot scam analysis.
 - Phase 6: Machine learning experiments.
 - Phase 7: Optional threat intelligence integrations.

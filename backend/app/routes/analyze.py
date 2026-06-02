@@ -14,6 +14,7 @@ from app.models.schemas import (
     ReputationSummary,
     ThreatIntelSummary,
 )
+from app.services.attack_explanation_service import build_attack_explanation
 from app.services.deep_analysis_service import analyze_url_deep
 from app.services.explanation_engine import build_explanations
 from app.services.form_analyzer import analyze_forms
@@ -46,6 +47,7 @@ def analyze_url(payload: AnalyzeUrlRequest) -> AnalyzeUrlResponse:
         reputation=url_pipeline["reputation"],
         threat_intel=url_pipeline["threat_intel"],
         deep_analysis=url_pipeline["deep_analysis"],
+        attack_explanation=url_pipeline["attack_explanation"],
     )
 
 
@@ -90,22 +92,32 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
         if not content_analysis.reasons and not form_analysis.reasons:
             reasons.append("No obvious phishing indicators were found by the MVP checks.")
 
+        signals = AnalyzePageSignals(
+            url_signals=[],
+            content_signals=content_analysis.reasons,
+            form_signals=form_analysis.reasons,
+        )
+        attack_explanation = build_attack_explanation(
+            reasons=reasons,
+            risk_level=_risk_level_from_points(combined_points),
+            signals=signals.dict(),
+            threat_intel=url_pipeline["threat_intel"].dict(),
+            deep_analysis=url_pipeline["deep_analysis"].dict(),
+        )
+
         return AnalyzePageResponse(
             url=url,
             risk_level=_risk_level_from_points(combined_points),
             phishing_probability=round(combined_points / 100, 2),
             trust_score=max(100 - combined_points, 0),
             reasons=reasons,
-            signals=AnalyzePageSignals(
-                url_signals=[],
-                content_signals=content_analysis.reasons,
-                form_signals=form_analysis.reasons,
-            ),
+            signals=signals,
             confidence="high" if combined_points >= 60 else "medium",
             trust_signals=[],
             reputation=_reputation_summary(url_pipeline["raw_reputation"]),
             threat_intel=url_pipeline["threat_intel"],
             deep_analysis=url_pipeline["deep_analysis"],
+            attack_explanation=attack_explanation,
         )
 
     form_analysis = analyze_forms(
@@ -145,22 +157,33 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
     if not reasons:
         reasons = ["No obvious phishing indicators were found by the MVP checks."]
 
+    signals = AnalyzePageSignals(
+        url_signals=url_pipeline["reasons"],
+        content_signals=effective_content_reasons,
+        form_signals=form_analysis.reasons,
+    )
+    risk_level = _risk_level_from_points(combined_points)
+    attack_explanation = build_attack_explanation(
+        reasons=reasons,
+        risk_level=risk_level,
+        signals=signals.dict(),
+        threat_intel=url_pipeline["threat_intel"].dict(),
+        deep_analysis=url_pipeline["deep_analysis"].dict(),
+    )
+
     return AnalyzePageResponse(
         url=url,
-        risk_level=_risk_level_from_points(combined_points),
+        risk_level=risk_level,
         phishing_probability=round(combined_points / 100, 2),
         trust_score=max(100 - combined_points, 0),
         reasons=reasons,
-        signals=AnalyzePageSignals(
-            url_signals=url_pipeline["reasons"],
-            content_signals=effective_content_reasons,
-            form_signals=form_analysis.reasons,
-        ),
+        signals=signals,
         confidence=url_pipeline["confidence"],
         trust_signals=url_pipeline["trust_signals"],
         reputation=url_pipeline["reputation"],
         threat_intel=url_pipeline["threat_intel"],
         deep_analysis=url_pipeline["deep_analysis"],
+        attack_explanation=attack_explanation,
     )
 
 
@@ -223,19 +246,30 @@ def analyze_message(payload: AnalyzeMessageRequest) -> AnalyzeMessageResponse:
     if not reasons:
         reasons = ["No obvious phishing indicators were found by the MVP message checks."]
 
+    signals = AnalyzeMessageSignals(
+        sender_signals=sender_analysis.reasons,
+        message_signals=message_analysis.reasons,
+        link_signals=link_analysis.reasons,
+        repeat_signals=repeat_result.repeat_signals,
+    )
+    risk_level = _risk_level_from_points(combined_points)
+    attack_explanation = build_attack_explanation(
+        reasons=reasons,
+        risk_level=risk_level,
+        signals=signals.dict(),
+        repeat_count=repeat_result.repeat_count,
+        repeat_warning=repeat_result.repeat_warning,
+    )
+
     return AnalyzeMessageResponse(
-        risk_level=_risk_level_from_points(combined_points),
+        risk_level=risk_level,
         phishing_probability=round(combined_points / 100, 2),
         trust_score=max(100 - combined_points, 0),
         reasons=reasons,
-        signals=AnalyzeMessageSignals(
-            sender_signals=sender_analysis.reasons,
-            message_signals=message_analysis.reasons,
-            link_signals=link_analysis.reasons,
-            repeat_signals=repeat_result.repeat_signals,
-        ),
+        signals=signals,
         repeat_count=repeat_result.repeat_count,
         repeat_warning=repeat_result.repeat_warning,
+        attack_explanation=attack_explanation,
     )
 
 
@@ -247,6 +281,12 @@ def _analyze_url_with_pipeline(url: str) -> dict:
     known_bad = threat_intel["is_known_bad"]
 
     if features.is_local_development:
+        attack_explanation = build_attack_explanation(
+            reasons=["Local development URL detected; phishing risk scoring skipped."],
+            risk_level="low",
+            threat_intel=_threat_intel_summary(threat_intel).dict(),
+            deep_analysis=DeepAnalysisSummary().dict(),
+        )
         return {
             "points": 0,
             "risk_level": "low",
@@ -259,6 +299,7 @@ def _analyze_url_with_pipeline(url: str) -> dict:
             "raw_reputation": reputation,
             "threat_intel": _threat_intel_summary(threat_intel),
             "deep_analysis": DeepAnalysisSummary(),
+            "attack_explanation": attack_explanation,
         }
 
     base_score = score_url_risk(features)
@@ -328,9 +369,19 @@ def _analyze_url_with_pipeline(url: str) -> dict:
     elif not reasons and points > 0:
         reasons = ["Multiple weak URL signals were found."]
 
+    threat_intel_summary = _threat_intel_summary(threat_intel)
+    deep_analysis_summary = _deep_analysis_summary(deep_analysis)
+    risk_level = _risk_level_from_points(points)
+    attack_explanation = build_attack_explanation(
+        reasons=reasons,
+        risk_level=risk_level,
+        threat_intel=threat_intel_summary.dict(),
+        deep_analysis=deep_analysis_summary.dict(),
+    )
+
     return {
         "points": points,
-        "risk_level": _risk_level_from_points(points),
+        "risk_level": risk_level,
         "phishing_probability": round(points / 100, 2),
         "trust_score": max(100 - points, 0),
         "reasons": reasons,
@@ -338,8 +389,9 @@ def _analyze_url_with_pipeline(url: str) -> dict:
         "trust_signals": trust_signals,
         "reputation": _reputation_summary(reputation),
         "raw_reputation": reputation,
-        "threat_intel": _threat_intel_summary(threat_intel),
-        "deep_analysis": _deep_analysis_summary(deep_analysis),
+        "threat_intel": threat_intel_summary,
+        "deep_analysis": deep_analysis_summary,
+        "attack_explanation": attack_explanation,
     }
 
 

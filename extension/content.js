@@ -243,12 +243,14 @@ function showCautionBanner(result) {
 
   const reasons = (result?.reasons || []).slice(0, 2);
   const probability = Math.round((Number(result?.phishing_probability) || 0) * 100);
+  const possibleIssue = result?.attack_explanation?.attack_type;
 
   banner.innerHTML = `
     <div style="display:flex; gap:12px; align-items:flex-start; justify-content:space-between;">
       <div>
         <strong>TrustTrace AI caution: this page has some suspicious signals.</strong>
         <div>Trust score: ${result?.trust_score ?? "N/A"} · Phishing probability: ${probability}%</div>
+        ${possibleIssue ? `<div>Possible issue: ${escapeHtml(possibleIssue)}</div>` : ""}
         ${reasons.length ? `<ul style="margin:6px 0 0; padding-left:18px;">${reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join("")}</ul>` : ""}
       </div>
       <div style="display:flex; gap:8px; flex:0 0 auto;">
@@ -699,10 +701,15 @@ function updateSearchBadge(badge, state) {
 }
 
 function buildSearchBadgeTitle(result) {
-  const probability = Math.round((Number(result?.phishing_probability) || 0) * 100);
   const topReasons = (result?.reasons || []).slice(0, 2).join(" ");
-  const topReason = topReasons ? ` Reason: ${topReasons}` : "";
-  return `TrustTrace AI: ${result?.risk_level || "low"} risk, trust score ${result?.trust_score ?? "N/A"}, phishing probability ${probability}%.${topReason}`;
+  const attackType = result?.attack_explanation?.attack_type;
+  if (attackType && topReasons) {
+    return `${attackType}: ${topReasons}`;
+  }
+  if (attackType) {
+    return `${attackType}: ${result?.attack_explanation?.summary || "TrustTrace found a possible issue."}`;
+  }
+  return topReasons || `TrustTrace AI: ${result?.risk_level || "low"} risk, trust score ${result?.trust_score ?? "N/A"}.`;
 }
 
 function isSearchResultsPage() {

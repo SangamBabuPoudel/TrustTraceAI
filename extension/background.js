@@ -206,7 +206,8 @@ async function redirectToWarning(tabId, originalUrl, result) {
     reasons: result.reasons || [],
     confidence: result.confidence || "medium",
     threat_intel: result.threat_intel || null,
-    deep_analysis: result.deep_analysis || null
+    deep_analysis: result.deep_analysis || null,
+    attack_explanation: result.attack_explanation || null
   };
 
   await chrome.storage.session.set({
@@ -250,6 +251,7 @@ async function cacheHighRiskResult(url, result) {
     confidence: result.confidence || "medium",
     threat_intel: result.threat_intel || null,
     deep_analysis: result.deep_analysis || null,
+    attack_explanation: result.attack_explanation || null,
     detected_at: new Date().toISOString()
   };
 

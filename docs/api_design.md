@@ -52,6 +52,16 @@ Response:
   "deep_analysis": {
     "signals": [],
     "score_delta": 0
+  },
+  "attack_explanation": {
+    "attack_type": "Unknown / low-risk",
+    "attack_category": "No strong pattern",
+    "severity": "low",
+    "summary": "No strong attack pattern was identified from the current checks.",
+    "how_it_works": [],
+    "what_to_avoid": [],
+    "safer_action": "",
+    "secondary_attack_types": []
   }
 }
 ```
@@ -242,6 +252,14 @@ Layer 3: ML and deep-analysis placeholders plus local checks for homoglyphs, pun
 - `trust_signals` explain legitimacy indicators such as official domains or local high-reputation matches.
 
 Brand impersonation is suspicious only when the brand appears outside the official domain. Hidden inputs, normal forms, brand names, and ordinary login/account wording are not enough by themselves to mark official high-reputation sites suspicious.
+
+### Attack Explanation Mode
+
+`/api/analyze-url`, `/api/analyze-page`, and `/api/analyze-message` may include `attack_explanation`.
+
+This is rule-based explainability, not an external AI model. It classifies the strongest likely attack pattern from existing reasons and signals, then explains how the attack works, what to avoid, and a safer action.
+
+Supported attack types include known-bad URL/malware, credential phishing, brand impersonation phishing, typosquatting/lookalike domains, insecure credential collection, suspicious link redirection, urgency/social engineering pressure, repeated scam/campaign behavior, and unknown/low-risk.
 
 Known-bad test URLs such as `http://apple-login-security.example.com/verify`, `https://openai-login-verify.example.com/password`, `https://claude-security-login.example.com`, and `https://gemini-google-verify-account.xyz/login` are included in the local blocklist for MVP testing only. No external feed is fetched.
 

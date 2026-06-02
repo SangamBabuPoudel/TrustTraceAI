@@ -50,6 +50,7 @@
 - Add local homoglyph, punycode, typosquatting, entropy, suspicious TLD, IP-hostname, and login/security prefix checks.
 - Add Universal Link Intelligence for search-result annotation and page-wide visible link scans.
 - Support visible link extraction on search, message, and normal webpage contexts.
+- Add Attack Explanation Mode with rule-based attack type classification and safer-action guidance.
 - Keep official trusted domains low risk by suppressing weak false-positive signals.
 - Treat local known-bad matches as instant high risk.
 

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TrustTrace AI Attack Explanation Tests</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        color: #172033;
+        background: #f6f8fb;
+      }
+
+      main {
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 32px 18px;
+      }
+
+      section {
+        margin-top: 18px;
+        padding: 18px;
+        border: 1px solid #d8e0ea;
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      a {
+        color: #0b57d0;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      li {
+        margin: 12px 0;
+      }
+
+      form {
+        display: grid;
+        gap: 10px;
+        max-width: 360px;
+      }
+
+      input,
+      button {
+        min-height: 38px;
+        padding: 8px 10px;
+        font: inherit;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>TrustTrace AI Attack Explanation Tests</h1>
+      <p>Open this page at <strong>http://127.0.0.1:5500/extension/test-attack-explanations.html</strong>, then use the popup or link scan to inspect attack explanations.</p>
+
+      <section>
+        <h2>URL attack examples</h2>
+        <ul>
+          <li><a href="http://apple-login-security.example.com/verify">Fake Apple login</a> - expected: Brand impersonation / Credential phishing.</li>
+          <li><a href="https://openai-login-verify.example.com/password">Fake OpenAI login</a> - expected: Credential phishing / Brand impersonation.</li>
+          <li><a href="https://gooogle-login.example.com">Typo Google lookalike</a> - expected: Typosquatting / lookalike domain.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>HTTP credential form example</h2>
+        <p>This local HTTP page contains a password field and account verification language. Scan the page with the popup.</p>
+        <p>Your account has unusual activity. Verify your password immediately to continue.</p>
+        <form action="http://example.com/login" method="post">
+          <input type="email" name="email" placeholder="Email">
+          <input type="password" name="password" placeholder="Password">
+          <button type="submit">Verify Account</button>
+        </form>
+      </section>
+
+      <section class="trusttrace-message-card" data-sender="google.security.alert@gmail.com" data-subject="Security Alert">
+        <h2>Repeated fake message example</h2>
+        <p>Your Google account has been suspended due to unusual activity. Verify your password immediately to avoid account closure.</p>
+        <a href="http://secure-google-login.example.com/verify">Google Login</a>
+        <p>Scan this message twice with Scan Email/Message to see repeated scam/campaign explanation.</p>
+      </section>
+    </main>
+  </body>
+</html>

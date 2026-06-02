@@ -36,9 +36,31 @@ async function initWarningPage() {
     item.textContent = signal.message || "Deep URL heuristic signal detected.";
     reasonsElement.appendChild(item);
   });
+  renderAttackExplanation(payload.attack_explanation);
 
   document.getElementById("go-back").addEventListener("click", () => goBackToSafety());
   document.getElementById("proceed").addEventListener("click", () => proceedAnyway(payload.original_url));
+}
+
+function renderAttackExplanation(explanation) {
+  const section = document.getElementById("attack-section");
+  if (!explanation) {
+    section.hidden = true;
+    return;
+  }
+
+  section.hidden = false;
+  document.getElementById("attack-type").textContent = explanation.attack_type || "Unknown";
+  document.getElementById("attack-summary").textContent = explanation.summary || "TrustTrace AI found a risky attack pattern.";
+  document.getElementById("safer-action").textContent = explanation.safer_action || "Go directly to the official website using a trusted bookmark.";
+
+  const avoidList = document.getElementById("attack-avoid");
+  avoidList.innerHTML = "";
+  (explanation.what_to_avoid || []).slice(0, 3).forEach((itemText) => {
+    const item = document.createElement("li");
+    item.textContent = itemText;
+    avoidList.appendChild(item);
+  });
 }
 
 async function loadWarningPayload() {

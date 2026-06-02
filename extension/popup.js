@@ -30,6 +30,8 @@ const phishingProbabilityElement = document.getElementById("phishing-probability
 const probabilityBarElement = document.getElementById("probability-bar");
 const reasonsElement = document.getElementById("reasons");
 const repeatNoteElement = document.getElementById("repeat-note");
+const attackExplanationElement = document.getElementById("attack-explanation");
+const attackBodyElement = document.getElementById("attack-body");
 const rescanButton = document.getElementById("rescan");
 const copyUrlButton = document.getElementById("copy-url");
 const copyReportButton = document.getElementById("copy-report");
@@ -330,6 +332,7 @@ function showLoading() {
   errorStateElement.hidden = true;
   resultElement.hidden = true;
   repeatNoteElement.hidden = true;
+  attackExplanationElement.hidden = true;
   messagePreviewElement.hidden = true;
   nearbyThreatsElement.hidden = true;
   loadingStateElement.hidden = false;
@@ -341,6 +344,7 @@ function showError(title, message, backendStatus = "offline") {
   loadingStateElement.hidden = true;
   resultElement.hidden = true;
   repeatNoteElement.hidden = true;
+  attackExplanationElement.hidden = true;
   messagePreviewElement.hidden = true;
   nearbyThreatsElement.hidden = true;
   errorStateElement.hidden = false;
@@ -497,6 +501,7 @@ function renderResult(result) {
   errorStateElement.hidden = true;
   resultElement.hidden = false;
   renderRepeatNote(result);
+  renderAttackExplanation(result.attack_explanation);
   copyReportButton.disabled = false;
 
   riskLevelElement.textContent = getRiskLabel(riskLevel);
@@ -513,6 +518,31 @@ function renderResult(result) {
 
   animateTrustScore(trustScore, riskLevel);
   renderReasons(result, riskLevel);
+}
+
+function renderAttackExplanation(explanation) {
+  if (!explanation) {
+    attackExplanationElement.hidden = true;
+    return;
+  }
+
+  const isLowRisk = explanation.attack_type === "Unknown / low-risk";
+  attackExplanationElement.hidden = false;
+  attackExplanationElement.open = !isLowRisk;
+
+  const howItWorks = (explanation.how_it_works || []).slice(0, 3);
+  const whatToAvoid = (explanation.what_to_avoid || []).slice(0, 3);
+
+  attackBodyElement.innerHTML = `
+    <div class="attack-type-row">
+      <span>${escapeHtml(explanation.attack_type || "Unknown / low-risk")}</span>
+      <strong class="${escapeHtml(explanation.severity || "low")}">${escapeHtml(explanation.severity || "low")}</strong>
+    </div>
+    <p>${escapeHtml(explanation.summary || "No strong attack pattern identified.")}</p>
+    ${howItWorks.length ? `<h3>How it works</h3><ul>${howItWorks.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
+    ${whatToAvoid.length ? `<h3>What to avoid</h3><ul>${whatToAvoid.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
+    ${explanation.safer_action ? `<h3>Safer action</h3><p>${escapeHtml(explanation.safer_action)}</p>` : ""}
+  `;
 }
 
 function renderRepeatNote(result) {
@@ -826,11 +856,12 @@ function createRiskyLinkCard(item) {
   const card = document.createElement("div");
   card.className = `risky-link-card ${item.classification.level}`;
   const topReason = item.result?.reasons?.[0] || "No specific reason returned.";
+  const attackType = item.result?.attack_explanation?.attack_type;
   const title = item.link.text || item.link.hostname || item.link.href;
 
   card.innerHTML = `
     <strong>${escapeHtml(title)}</strong>
-    <p>${escapeHtml(item.link.hostname)} · ${escapeHtml(item.classification.label)} · Trust score ${item.result?.trust_score ?? "N/A"}</p>
+    <p>${escapeHtml(item.link.hostname)} · ${escapeHtml(item.classification.label)} · Trust score ${item.result?.trust_score ?? "N/A"}${attackType ? ` · ${escapeHtml(attackType)}` : ""}</p>
     <p>${escapeHtml(topReason)}</p>
   `;
 
@@ -1127,6 +1158,10 @@ function buildReport() {
         .map((signal) => (typeof signal === "string" ? signal : signal.message))
         .join("\n- ")
     : "None";
+  const attackExplanation = latestResult?.attack_explanation;
+  const attackAvoid = attackExplanation?.what_to_avoid?.length
+    ? attackExplanation.what_to_avoid.join("\n- ")
+    : "None";
 
   return `TrustTrace AI Scan Report
 Scan Type: ${latestScanType}
@@ -1136,6 +1171,11 @@ Trust Score: ${latestResult?.trust_score ?? "Unavailable"}
 Phishing Probability: ${Math.round((latestResult?.phishing_probability || 0) * 100)}%
 Detection Confidence: ${latestResult?.confidence || "N/A"}
 Repeat Count: ${latestResult?.repeat_count || "N/A"}
+Attack Type: ${attackExplanation?.attack_type || "N/A"}
+Attack Summary: ${attackExplanation?.summary || "N/A"}
+What To Avoid:
+- ${attackAvoid}
+Safer Action: ${attackExplanation?.safer_action || "N/A"}
 Reasons:
 - ${reasons}
 Trust Signals:

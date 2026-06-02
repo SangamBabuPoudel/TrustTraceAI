@@ -31,6 +31,17 @@ class DeepAnalysisSummary(BaseModel):
     score_delta: int = 0
 
 
+class AttackExplanationSummary(BaseModel):
+    attack_type: str = "Unknown / low-risk"
+    attack_category: str = "No strong pattern"
+    severity: Literal["low", "medium", "high"] = "low"
+    summary: str = "No strong attack pattern was identified from the current checks."
+    how_it_works: list[str] = Field(default_factory=list)
+    what_to_avoid: list[str] = Field(default_factory=list)
+    safer_action: str = ""
+    secondary_attack_types: list[str] = Field(default_factory=list)
+
+
 class AnalyzeUrlResponse(BaseModel):
     url: str
     risk_level: Literal["low", "medium", "high"]
@@ -42,6 +53,7 @@ class AnalyzeUrlResponse(BaseModel):
     reputation: ReputationSummary = Field(default_factory=ReputationSummary)
     threat_intel: ThreatIntelSummary = Field(default_factory=ThreatIntelSummary)
     deep_analysis: DeepAnalysisSummary = Field(default_factory=DeepAnalysisSummary)
+    attack_explanation: AttackExplanationSummary = Field(default_factory=AttackExplanationSummary)
 
 
 class PageFormMetadata(BaseModel):
@@ -79,6 +91,7 @@ class AnalyzePageResponse(BaseModel):
     reputation: ReputationSummary = Field(default_factory=ReputationSummary)
     threat_intel: ThreatIntelSummary = Field(default_factory=ThreatIntelSummary)
     deep_analysis: DeepAnalysisSummary = Field(default_factory=DeepAnalysisSummary)
+    attack_explanation: AttackExplanationSummary = Field(default_factory=AttackExplanationSummary)
 
 
 class MessageLink(BaseModel):
@@ -110,3 +123,4 @@ class AnalyzeMessageResponse(BaseModel):
     signals: AnalyzeMessageSignals
     repeat_count: int
     repeat_warning: Optional[str] = None
+    attack_explanation: AttackExplanationSummary = Field(default_factory=AttackExplanationSummary)

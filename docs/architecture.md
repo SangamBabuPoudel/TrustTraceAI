@@ -13,6 +13,7 @@ TrustTrace AI starts as a local browser extension plus FastAPI backend.
 - Threat intelligence layer: checks a local MVP known-bad blocklist and reserves PhishTank, OpenPhish, Google Safe Browsing, URLhaus, VirusTotal, and host feed integrations for later.
 - Reputation and legitimacy layer: verifies official trusted brand domains and local high-reputation domains.
 - Deep analysis layer: runs local homoglyph, punycode, typosquatting, entropy, TLD, IP-hostname, subdomain, and lookalike checks, with placeholders for ML, RDAP, Tranco, URLScan, and certificate reputation.
+- Attack explanation layer: converts existing risk signals into a human-readable attack type, how-it-works explanation, what-to-avoid guidance, and safer action.
 - URL feature extractor: turns a URL into simple security signals.
 - Risk scoring engine: converts signals into a risk level, phishing probability, and trust score.
 - Explanation engine: converts detected signals into beginner-readable reasons.
@@ -27,6 +28,7 @@ TrustTrace AI starts as a local browser extension plus FastAPI backend.
 5. The backend suppresses weak false-positive signals on official or high-reputation domains.
 6. The backend scores strong evidence such as fake brand domains, credential harvesting, sender impersonation, or link mismatch.
 7. The popup displays risk, trust score, reasons, trust signals, confidence, and grouped evidence.
+8. Attack Explanation Mode summarizes the likely attack pattern without calling an external AI model.
 
 ## Pre-Visit Protection Flow
 
@@ -54,6 +56,10 @@ TrustTrace AI starts as a local browser extension plus FastAPI backend.
 3. Layer 3: ML and deep analysis placeholders plus local homoglyph, punycode, typosquatting, entropy, brand spoofing, suspicious TLD, IP hostname, subdomain, and lookalike checks.
 
 Known-bad blocklist matches are instant high-risk evidence. Official trusted domains suppress weak signals such as normal forms, hidden inputs, and ordinary login wording unless stronger evidence appears.
+
+## Attack Explanation Mode
+
+The backend uses `attack_explanation_service.py` to inspect final reasons, grouped signals, threat-intel status, deep URL signals, and repeated-message counts. It prioritizes known-bad URLs, credential phishing, brand impersonation, lookalike domains, insecure credential collection, redirection, urgency pressure, repeated campaigns, and low-risk results.
 
 ## Local Development Boundary
 

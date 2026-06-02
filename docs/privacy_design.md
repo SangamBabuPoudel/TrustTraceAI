@@ -18,6 +18,7 @@ TrustTrace AI should be privacy-first by default.
 - Pre-visit protection sends only the destination URL to the local backend. Page content is not collected for pre-visit warnings.
 - Link scanning sends only visible link URLs plus lightweight link text/context. It does not collect search query text, cookies, passwords, hidden form values, or full page text for link-only scans.
 - Search result annotation scans visible result URLs only and avoids navigation/sidebar links where possible.
+- Attack Explanation Mode is generated locally from existing risk signals and does not call an external AI model or API.
 
 ## Message Scan Storage
 
@@ -48,6 +49,12 @@ Repeated message detection uses a local SQLite database at `backend/trusttrace.d
 - Search result badges are URL-only annotations for visible results.
 - Email/message pages can provide visible links for link scanning, but full mailbox scanning is not performed.
 - High-risk link clicks are handled by the existing pre-visit warning page rather than a separate blocking system.
+
+## Attack Explanation Mode
+
+- Explanations are derived from already-computed local signals.
+- No additional personal data is collected to create attack explanations.
+- No prompt, page text, email text, or URL is sent to an external AI provider for MVP explanations.
 
 ## Future Privacy Requirements
 

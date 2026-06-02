@@ -29,12 +29,15 @@ MVP 8 adds local threat intelligence and deep URL heuristics. A local known-bad 
 
 MVP 8 also adds Universal Link Intelligence. Search result annotation warns beside visible results, and popup-driven page-wide link scanning summarizes visible links on normal webpages, message pages, blogs, shopping pages, and school sites.
 
+MVP 9 adds Attack Explanation Mode. It classifies likely attack patterns such as credential phishing, brand impersonation, lookalike domains, insecure credential collection, suspicious redirection, urgency pressure, known-bad URLs, and repeated scam campaigns.
+
 ## Trust Boundaries
 
 - Browser extension: has access to the current tab URL when the popup runs.
 - Browser extension service worker: checks destination URLs during top-level navigation.
 - Browser extension: only scans selected or visible message text when the user clicks Scan Email/Message.
 - Browser extension: scans visible link URLs only when annotating search results or when the user clicks Scan Links on This Page.
+- Local backend: generates attack explanations from existing signals without external AI calls.
 - Local backend: receives user-controlled scan payloads and returns rule-based analysis.
 - External services: not used in the MVP.
 - External threat-intelligence, domain reputation, and ML integrations are placeholders only until explicitly configured in a future phase.

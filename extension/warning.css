@@ -100,6 +100,41 @@ h2 {
   font-size: 16px;
 }
 
+.attack-section {
+  padding: 16px;
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  border-radius: 14px;
+  background: rgba(127, 29, 29, 0.2);
+}
+
+.attack-warning-grid {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.attack-warning-grid span,
+.attack-section h3 {
+  color: #fecaca;
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.attack-warning-grid strong {
+  font-size: 20px;
+}
+
+.attack-section p {
+  margin: 8px 0 12px;
+  color: #fee2e2;
+  line-height: 1.45;
+}
+
+.attack-section h3 {
+  margin: 12px 0 6px;
+}
+
 li {
   margin-bottom: 7px;
   color: #fee2e2;
