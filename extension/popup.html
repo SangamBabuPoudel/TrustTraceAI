@@ -69,6 +69,19 @@
         <div class="link-scan-panel" id="link-scan-panel" hidden></div>
       </section>
 
+      <section class="glass-card report-card" aria-labelledby="security-report-label">
+        <div class="section-topline">
+          <span class="eyebrow" id="security-report-label">Security Report</span>
+        </div>
+        <p class="privacy-note">Report Card stores only local summary counts on this browser. It does not store passwords, cookies, full email text, or personal account data.</p>
+        <div class="security-report-grid" id="security-report-grid"></div>
+        <p class="report-message" id="report-message"></p>
+        <div class="report-actions">
+          <button class="secondary-button" id="refresh-report" type="button">Refresh Report</button>
+          <button class="secondary-button" id="reset-report" type="button">Reset Local Stats</button>
+        </div>
+      </section>
+
       <section class="glass-card result-card" id="result" hidden>
         <div class="score-grid">
           <div class="score-meter" id="score-meter" style="--score-percent: 0%; --risk-color: #2dd4bf;">
@@ -120,6 +133,7 @@
       </footer>
     </main>
 
+    <script src="securityStats.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

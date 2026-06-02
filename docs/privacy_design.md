@@ -22,6 +22,7 @@ TrustTrace AI is designed around minimal collection, local analysis, and user-co
 | Search annotation | Visible result URLs only. |
 | Message scan | Selected or visible message text, optional sender input, visible links. |
 | Repeated message detection | Hash and short metadata, not full message body. |
+| Security Report Card | Local summary counters and attack type counts. |
 
 ## What Is Not Collected
 
@@ -31,6 +32,7 @@ TrustTrace AI is designed around minimal collection, local analysis, and user-co
 - Full mailbox data.
 - Background email content.
 - Browser history.
+- Full URL paths for report-card metrics.
 - Search query text for annotation.
 - API keys in frontend code.
 
@@ -60,6 +62,12 @@ Not stored:
 ## Pre-Visit Protection
 
 Pre-visit protection sends only the destination URL to the local backend. Page content is not collected before navigation. If a URL is high risk, the extension shows `warning.html`. If the user clicks Proceed Anyway, the exact URL is allowed for the current browser session only.
+
+## Personal Security Report Card
+
+The report card uses `chrome.storage.local` to store local summary counts on this browser. It tracks counts such as total scans, high-risk blocks, caution banners, suspicious messages, high-risk links, fake login forms, repeated scam warnings, and attack type counts.
+
+It does not store full message text, passwords, cookies, form values, personal account data, or full browsing history. The popup includes Reset Local Stats so the user can clear report-card metrics at any time.
 
 ## External Integrations
 

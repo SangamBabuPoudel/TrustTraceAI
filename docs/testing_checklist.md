@@ -76,3 +76,14 @@ Use this checklist before recording a demo or submitting the project.
 - [ ] Confirm typosquatting/lookalike explanation.
 - [ ] Scan HTTP password form page.
 - [ ] Confirm insecure credential collection explanation.
+
+## Personal Security Report Card
+
+- [ ] Open the popup and confirm Security Report appears.
+- [ ] Run a page scan and confirm URL/page counters increase.
+- [ ] Trigger a high-risk warning and confirm high-risk blocks increase.
+- [ ] Trigger a medium-risk page and confirm caution warnings increase.
+- [ ] Run Scan Links on This Page and confirm link scan counters increase.
+- [ ] Scan a scam message and confirm suspicious message counters increase.
+- [ ] Scan the same scam message twice and confirm repeated scam warning counter increases.
+- [ ] Click Reset Local Stats and confirm counters reset after confirmation.

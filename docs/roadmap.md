@@ -13,15 +13,15 @@
 | MVP 7 | Complete | Pre-visit high-risk warning page and medium-risk caution banner. |
 | MVP 8 | Complete | Local threat intelligence, deep URL heuristics, universal link intelligence, and search result annotation. |
 | MVP 9 | Complete | Attack Explanation Mode. |
+| MVP 10 | Complete | Personal Security Report Card with local-only summary metrics and reset option. |
 
 ## Future Work
 
-### MVP 10: Personal Security Report Card
+### Personal Security Report Card Enhancements
 
-- Summarize recent local scans.
-- Show counts of trusted, caution, and high-risk scans.
-- Highlight most common attack types.
-- Keep privacy controls clear and local-first.
+- Add date-range filters such as today, week, and all-time.
+- Add lightweight trend summaries.
+- Add exportable privacy-safe report snapshots.
 
 ### Threat Intelligence Integrations
 

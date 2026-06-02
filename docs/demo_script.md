@@ -55,7 +55,12 @@ Reload the unpacked extension in `chrome://extensions`.
    - Open a Google/Bing/DuckDuckGo/Yahoo search page.
    - Point out TrustTrace badges beside visible search results.
 
-8. Close with architecture.
+8. Show the Personal Security Report Card.
+   - Open the popup Security Report section.
+   - Show URL scans, high-risk blocks, caution warnings, suspicious messages, high-risk links, repeated scams, and most common attack type.
+   - Mention that these are local-only summary counts with a reset option.
+
+9. Close with architecture.
    - “The extension talks to FastAPI, FastAPI runs a multi-layer local scoring pipeline, and the UI renders warnings, banners, badges, and explanations.”
 
 ## Closing Line

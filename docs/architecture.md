@@ -24,6 +24,7 @@ Local FastAPI Backend
   |-- Sender Identity Analyzer
   |-- Message Fingerprint Service
   |-- Attack Explanation Service
+  |-- Local Security Report Metrics
   |
   v
 Risk Response
@@ -33,6 +34,7 @@ Risk Response
   |-- Caution Banner
   |-- Search Result Badges
   |-- Universal Link Summary
+  |-- Security Report Card
 ```
 
 ## Chrome Extension
@@ -100,6 +102,12 @@ The attack explanation service uses existing reasons and signals to classify a l
 - How it works
 - What to avoid
 - Safer action
+
+## Personal Security Report Card
+
+The extension stores local-only summary counters in `chrome.storage.local`. The report card tracks totals such as URL/page/message/link scans, high-risk blocks, medium cautions, suspicious messages, fake login form detections, repeated scam warnings, and attack type counts.
+
+It does not store passwords, cookies, full URLs, full message text, form values, personal identity, or full browsing history. Users can reset the local stats from the popup.
 
 ## Current Limitations
 

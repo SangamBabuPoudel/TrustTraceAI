@@ -16,6 +16,7 @@ TrustTrace AI focuses on common browser-based phishing and scam risks.
 | HTTP credential risks | Flags HTTP pages with account/login/payment/password behavior. |
 | Repeated scam campaigns | Uses local message hashes to identify repeated similar messages. |
 | Risky search/page links | Annotates search results and scans visible links on any page. |
+| Local protection awareness | Summarizes local-only security counters in the Personal Security Report Card. |
 
 ## Attack Explanation Mode
 
@@ -43,6 +44,7 @@ This is rule-based explainability, not an external AI model.
 - It does not use real-time external threat intelligence yet.
 - It does not use a trained ML phishing classifier yet.
 - Search engine page layouts can change and may require annotation maintenance.
+- The report card is summary-only and should not be interpreted as complete browsing telemetry.
 - A low-risk result does not guarantee a site is safe; it means the MVP checks did not find strong indicators.
 
 ## Safety Notes

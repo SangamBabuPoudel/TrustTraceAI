@@ -41,6 +41,10 @@ const senderInputElement = document.getElementById("sender-input");
 const messagePreviewElement = document.getElementById("message-preview");
 const nearbyThreatsElement = document.getElementById("nearby-threats");
 const linkScanPanelElement = document.getElementById("link-scan-panel");
+const securityReportGridElement = document.getElementById("security-report-grid");
+const reportMessageElement = document.getElementById("report-message");
+const refreshReportButton = document.getElementById("refresh-report");
+const resetReportButton = document.getElementById("reset-report");
 
 let currentTabUrl = "";
 let latestResult = null;
@@ -592,6 +596,8 @@ async function scanCurrentUrl() {
     });
     latestScanType = "website";
     renderResult(result);
+    await TrustTraceSecurityStats.recordScanResult(result, "website");
+    await renderSecurityReport();
   } catch (error) {
     showError(
       "Backend unavailable",
@@ -628,6 +634,8 @@ async function scanEmailMessage() {
 
     latestScanType = "message";
     renderResult(result);
+    await TrustTraceSecurityStats.recordMessageScanResult(result);
+    await renderSecurityReport();
   } catch (error) {
     showError(
       "Backend unavailable",
@@ -818,6 +826,7 @@ function renderLinkScanSummary(scanned) {
     high: scanned.filter((item) => item.classification.level === "high").length,
     unknown: scanned.filter((item) => item.classification.level === "unknown").length
   };
+  TrustTraceSecurityStats.recordLinkScanSummary(summary).then(renderSecurityReport);
   const riskyLinks = scanned
     .filter((item) => item.classification.level === "high" || item.classification.level === "caution")
     .sort((a, b) => Number(a.result?.trust_score ?? 101) - Number(b.result?.trust_score ?? 101))
@@ -850,6 +859,58 @@ function renderLinkScanSummary(scanned) {
   riskyLinks.forEach((item) => {
     linkScanPanelElement.appendChild(createRiskyLinkCard(item));
   });
+}
+
+async function renderSecurityReport() {
+  const stats = await TrustTraceSecurityStats.getSecurityStats();
+  const mostCommonAttack = getMostCommonAttack(stats.attack_type_counts);
+  const riskyItems = (
+    Number(stats.high_risk_blocks || 0)
+    + Number(stats.medium_cautions || 0)
+    + Number(stats.high_risk_links_detected || 0)
+    + Number(stats.suspicious_messages_detected || 0)
+    + Number(stats.fake_login_forms_detected || 0)
+  );
+
+  const reportItems = [
+    ["URLs scanned", stats.total_url_scans],
+    ["High-risk blocked", stats.high_risk_blocks],
+    ["Cautions shown", stats.medium_cautions],
+    ["Suspicious messages", stats.suspicious_messages_detected],
+    ["High-risk links", stats.high_risk_links_detected],
+    ["Fake login forms", stats.fake_login_forms_detected],
+    ["Repeated scams", stats.repeated_message_warnings],
+    ["Top attack", mostCommonAttack]
+  ];
+
+  securityReportGridElement.innerHTML = "";
+  reportItems.forEach(([label, value]) => {
+    const item = document.createElement("div");
+    item.className = "security-stat";
+    item.innerHTML = `<span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value || 0))}</strong>`;
+    securityReportGridElement.appendChild(item);
+  });
+
+  reportMessageElement.textContent = riskyItems > 0
+    ? `TrustTrace AI helped you identify ${riskyItems} risky item${riskyItems === 1 ? "" : "s"}.`
+    : "No risky items have been recorded in your local report yet.";
+}
+
+function getMostCommonAttack(attackTypeCounts) {
+  const entries = Object.entries(attackTypeCounts || {})
+    .filter(([, count]) => Number(count) > 0)
+    .sort((a, b) => Number(b[1]) - Number(a[1]));
+  return entries[0]?.[0] || "None yet";
+}
+
+async function resetLocalSecurityReport() {
+  const shouldReset = confirm("Reset local TrustTrace Report Card stats for this browser?");
+  if (!shouldReset) {
+    return;
+  }
+
+  await TrustTraceSecurityStats.resetSecurityStats();
+  await renderSecurityReport();
 }
 
 function createRiskyLinkCard(item) {
@@ -1203,6 +1264,8 @@ Repeat Signals:
 rescanButton.addEventListener("click", scanCurrentUrl);
 scanMessageButton.addEventListener("click", scanEmailMessage);
 scanLinksButton.addEventListener("click", scanLinksOnPage);
+refreshReportButton.addEventListener("click", renderSecurityReport);
+resetReportButton.addEventListener("click", resetLocalSecurityReport);
 
 copyUrlButton.addEventListener("click", async () => {
   try {
@@ -1225,3 +1288,4 @@ copyReportButton.addEventListener("click", async () => {
 });
 
 scanCurrentUrl();
+renderSecurityReport();

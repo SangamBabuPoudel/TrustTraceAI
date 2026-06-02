@@ -1,3 +1,5 @@
+importScripts("securityStats.js");
+
 const ANALYZE_URL_ENDPOINT = "http://127.0.0.1:8000/api/analyze-url";
 const HIGH_RISK_CACHE_KEY = "trusttraceHighRiskCache";
 const SESSION_ALLOWLIST_KEY = "trusttraceSessionAllowlist";
@@ -24,6 +26,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
 
   const cachedResult = await getCachedHighRiskResult(targetUrl);
   if (cachedResult) {
+    await TrustTraceSecurityStats.recordWarningBlock(cachedResult);
     await redirectToWarning(tabId, targetUrl, cachedResult);
     return;
   }
@@ -39,6 +42,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
 
     if (isHighRisk(result)) {
       await cacheHighRiskResult(targetUrl, result);
+      await TrustTraceSecurityStats.recordWarningBlock(result);
       await redirectToWarning(tabId, targetUrl, result);
       return;
     }
@@ -48,6 +52,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
         original_url: targetUrl,
         result
       });
+      await TrustTraceSecurityStats.recordCautionBanner(result);
       await showCautionBanner(tabId, result);
     }
   } catch (error) {
