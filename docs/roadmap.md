@@ -48,6 +48,8 @@
 - Add a local MVP known-bad URL/domain blocklist.
 - Add future feed placeholders for OpenPhish, URLHaus, PhishTank, Google Safe Browsing, and host lists.
 - Add local homoglyph, punycode, typosquatting, entropy, suspicious TLD, IP-hostname, and login/security prefix checks.
+- Add Universal Link Intelligence for search-result annotation and page-wide visible link scans.
+- Support visible link extraction on search, message, and normal webpage contexts.
 - Keep official trusted domains low risk by suppressing weak false-positive signals.
 - Treat local known-bad matches as instant high risk.
 

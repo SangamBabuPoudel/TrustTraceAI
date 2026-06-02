@@ -13,6 +13,7 @@ TrustTrace AI focuses on browser security risks that target everyday users.
 - URLs using punycode, homoglyphs, typosquatting, suspicious TLDs, high-entropy domains, or login/security prefixes.
 - Brand impersonation outside official domains, such as fake Apple, OpenAI, Claude, Gemini, Google, PayPal, or bank login pages.
 - High-risk links clicked before the user opens the popup.
+- Search results or ordinary webpages that include risky links alongside safe links.
 - Dark patterns that pressure users into unsafe actions.
 - Screenshot-based scams that ask users to scan QR codes, call fake support numbers, or enter credentials.
 
@@ -26,11 +27,14 @@ MVP 7 adds pre-visit protection. High-risk URLs are blocked with an interstitial
 
 MVP 8 adds local threat intelligence and deep URL heuristics. A local known-bad blocklist is treated as instant high-risk evidence for testing. Deep checks detect homoglyphs, punycode, typosquatting, suspicious TLDs, entropy, IP hostnames, and fake brand domains while official trusted domains suppress weak false-positive signals.
 
+MVP 8 also adds Universal Link Intelligence. Search result annotation warns beside visible results, and popup-driven page-wide link scanning summarizes visible links on normal webpages, message pages, blogs, shopping pages, and school sites.
+
 ## Trust Boundaries
 
 - Browser extension: has access to the current tab URL when the popup runs.
 - Browser extension service worker: checks destination URLs during top-level navigation.
 - Browser extension: only scans selected or visible message text when the user clicks Scan Email/Message.
+- Browser extension: scans visible link URLs only when annotating search results or when the user clicks Scan Links on This Page.
 - Local backend: receives user-controlled scan payloads and returns rule-based analysis.
 - External services: not used in the MVP.
 - External threat-intelligence, domain reputation, and ML integrations are placeholders only until explicitly configured in a future phase.

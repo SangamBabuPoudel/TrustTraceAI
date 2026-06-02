@@ -127,6 +127,7 @@ button {
 .url-card,
 .loading-card,
 .message-card,
+.link-card,
 .result-card,
 .error-card {
   padding: 14px;
@@ -535,6 +536,108 @@ button {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 9px;
+}
+
+.link-scan-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.link-progress {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #e8f6ff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.link-progress-track {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.link-progress-track span {
+  display: block;
+  min-width: 10%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--low), #a7f3d0);
+  transition: width 180ms ease;
+}
+
+.link-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.link-summary-item {
+  min-width: 0;
+  padding: 8px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  text-align: center;
+}
+
+.link-summary-item span {
+  display: block;
+  overflow-wrap: anywhere;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.link-summary-item strong {
+  display: block;
+  margin-top: 3px;
+  color: #ffffff;
+  font-size: 15px;
+}
+
+.link-risk-heading {
+  color: #c7d2e1;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.risky-link-card,
+.link-scan-empty {
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.risky-link-card.caution {
+  border-color: rgba(251, 191, 36, 0.42);
+}
+
+.risky-link-card.high {
+  border-color: rgba(251, 113, 133, 0.5);
+  background: rgba(127, 29, 29, 0.2);
+}
+
+.risky-link-card strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+
+.risky-link-card p,
+.link-scan-empty {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .mini-button {

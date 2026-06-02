@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TrustTrace AI Universal Link Test</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        color: #172033;
+        background: #f6f8fb;
+      }
+
+      main {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 32px 18px;
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 30px;
+      }
+
+      h2 {
+        margin-top: 28px;
+        font-size: 20px;
+      }
+
+      p {
+        line-height: 1.55;
+      }
+
+      section {
+        margin-top: 18px;
+        padding: 18px;
+        border: 1px solid #d8e0ea;
+        border-radius: 8px;
+        background: #ffffff;
+      }
+
+      .search-result,
+      .trusttrace-message-card,
+      .normal-link {
+        padding: 14px 0;
+        border-bottom: 1px solid #edf1f5;
+      }
+
+      .search-result:last-child,
+      .trusttrace-message-card:last-child,
+      .normal-link:last-child {
+        border-bottom: 0;
+      }
+
+      a {
+        color: #0b57d0;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      a:hover {
+        text-decoration: underline;
+      }
+
+      .url {
+        margin-top: 4px;
+        color: #0f766e;
+        font-size: 13px;
+      }
+
+      .message-body {
+        color: #4b5563;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>TrustTrace AI Universal Link Test</h1>
+      <p>Open this page at <strong>http://127.0.0.1:5500/extension/test-universal-links.html</strong>, then use the popup button: <strong>Scan Links on This Page</strong>.</p>
+
+      <section aria-labelledby="search-style-results">
+        <h2 id="search-style-results">Search-style results</h2>
+        <div class="search-result">
+          <a href="https://www.apple.com"><h3>Safe Apple</h3></a>
+          <p class="url">https://www.apple.com</p>
+        </div>
+        <div class="search-result">
+          <a href="https://openai.com"><h3>Safe OpenAI</h3></a>
+          <p class="url">https://openai.com</p>
+        </div>
+        <div class="search-result">
+          <a href="https://claude.ai"><h3>Safe Claude</h3></a>
+          <p class="url">https://claude.ai</p>
+        </div>
+        <div class="search-result">
+          <a href="http://apple-login-security.example.com/verify"><h3>Fake Apple phishing login</h3></a>
+          <p class="url">http://apple-login-security.example.com/verify</p>
+        </div>
+        <div class="search-result">
+          <a href="https://openai-login-verify.example.com/password"><h3>Fake OpenAI verification page</h3></a>
+          <p class="url">https://openai-login-verify.example.com/password</p>
+        </div>
+        <div class="search-result">
+          <a href="https://gooogle-login.example.com"><h3>Typo lookalike Google login</h3></a>
+          <p class="url">https://gooogle-login.example.com</p>
+        </div>
+      </section>
+
+      <section aria-labelledby="message-style-links">
+        <h2 id="message-style-links">Email/message-style section</h2>
+        <div class="trusttrace-message-card" data-sender="google.security.alert@gmail.com" data-subject="Security Alert">
+          <p class="message-body">Your account has been suspended. Verify your password immediately.</p>
+          <a href="http://secure-google-login.example.com/verify">Google Login</a>
+        </div>
+      </section>
+
+      <section aria-labelledby="normal-webpage-links">
+        <h2 id="normal-webpage-links">Normal webpage links</h2>
+        <div class="normal-link"><a href="https://wikipedia.org">Wikipedia</a></div>
+        <div class="normal-link"><a href="https://github.com">GitHub</a></div>
+        <div class="normal-link"><a href="https://www.youtube.com">YouTube</a></div>
+        <div class="normal-link"><a href="http://example.com">Random HTTP site</a></div>
+        <div class="normal-link"><a href="https://bit.ly/3SuspiciousLink">Shortened link example</a></div>
+      </section>
+    </main>
+  </body>
+</html>

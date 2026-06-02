@@ -1,6 +1,8 @@
+const URL_API_URL = "http://127.0.0.1:8000/api/analyze-url";
 const PAGE_API_URL = "http://127.0.0.1:8000/api/analyze-page";
 const MESSAGE_API_URL = "http://127.0.0.1:8000/api/analyze-message";
 const MAX_VISIBLE_TEXT_LENGTH = 5000;
+const LINK_SCAN_CONCURRENCY = 4;
 
 const RISK_MESSAGES = {
   low: "Looks safe based on current checks.",
@@ -32,15 +34,18 @@ const rescanButton = document.getElementById("rescan");
 const copyUrlButton = document.getElementById("copy-url");
 const copyReportButton = document.getElementById("copy-report");
 const scanMessageButton = document.getElementById("scan-message");
+const scanLinksButton = document.getElementById("scan-links");
 const senderInputElement = document.getElementById("sender-input");
 const messagePreviewElement = document.getElementById("message-preview");
 const nearbyThreatsElement = document.getElementById("nearby-threats");
+const linkScanPanelElement = document.getElementById("link-scan-panel");
 
 let currentTabUrl = "";
 let latestResult = null;
 let latestScanType = "website";
 let messageCandidates = [];
 let selectedMessageCandidateId = null;
+const popupLinkCache = new Map();
 
 async function getCurrentTab() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -272,6 +277,29 @@ async function analyzePage(payload) {
   }
 
   return response.json();
+}
+
+async function analyzeUrlOnly(url) {
+  const normalizedUrl = normalizeHref(url);
+  if (popupLinkCache.has(normalizedUrl)) {
+    return popupLinkCache.get(normalizedUrl);
+  }
+
+  const response = await fetch(URL_API_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ url: normalizedUrl })
+  });
+
+  if (!response.ok) {
+    throw new Error("The local TrustTrace API returned an error.");
+  }
+
+  const result = await response.json();
+  popupLinkCache.set(normalizedUrl, result);
+  return result;
 }
 
 async function analyzeMessage(payload) {
@@ -578,6 +606,307 @@ async function scanEmailMessage() {
   }
 }
 
+async function scanLinksOnPage() {
+  const tab = await getCurrentTab();
+  currentTabUrl = tab?.url || "";
+  currentUrlElement.textContent = currentTabUrl || "No supported URL found.";
+  currentUrlElement.title = currentTabUrl;
+
+  if (!currentTabUrl.startsWith("http://") && !currentTabUrl.startsWith("https://")) {
+    renderLinkScanError("Open an HTTP or HTTPS page to scan visible links.");
+    return;
+  }
+
+  setBackendStatus("checking");
+  scanLinksButton.disabled = true;
+  renderLinkScanProgress(0, 0, "Collecting visible links...");
+
+  try {
+    const snapshot = await extractVisibleLinksFromTab(tab, getLinkExtractionMode(currentTabUrl));
+    const links = dedupeLinks(snapshot.links || []).slice(0, 30);
+
+    if (links.length === 0) {
+      renderLinkScanError("No visible scan-worthy links were found on this page.", "checking");
+      return;
+    }
+
+    renderLinkScanProgress(0, links.length, "Scanning visible link URLs...");
+    const scanned = await scanLinksWithLimit(links, LINK_SCAN_CONCURRENCY, (completed, total) => {
+      renderLinkScanProgress(completed, total, `Scanning ${completed} of ${total} links...`);
+    });
+
+    setBackendStatus("online");
+    renderLinkScanSummary(scanned);
+  } catch (error) {
+    renderLinkScanError("Backend unavailable. Start the FastAPI server and try again.");
+  } finally {
+    scanLinksButton.disabled = false;
+  }
+}
+
+async function extractVisibleLinksFromTab(tab, mode) {
+  try {
+    return await chrome.tabs.sendMessage(tab.id, {
+      type: "TRUSTTRACE_EXTRACT_VISIBLE_LINKS",
+      mode
+    });
+  } catch (error) {
+    const [result] = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: collectVisibleLinksFallback,
+      args: [mode]
+    });
+    return result?.result || { links: [], page_url: tab.url, page_title: tab.title, mode };
+  }
+}
+
+function collectVisibleLinksFallback(mode) {
+  const maxLinks = mode === "search" ? 15 : 30;
+  const seen = new Set();
+
+  function isVisible(element) {
+    const rect = element.getBoundingClientRect();
+    const style = window.getComputedStyle(element);
+    return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+  }
+
+  const links = Array.from(document.querySelectorAll("a[href]"))
+    .filter((link) => {
+      try {
+        const url = new URL(link.href);
+        if (!["http:", "https:"].includes(url.protocol) || seen.has(url.href) || !isVisible(link)) {
+          return false;
+        }
+        seen.add(url.href);
+        return true;
+      } catch (error) {
+        return false;
+      }
+    })
+    .slice(0, maxLinks)
+    .map((link, index) => {
+      const url = new URL(link.href);
+      const text = (link.innerText || link.textContent || link.href).replace(/\s+/g, " ").trim();
+      return {
+        id: `fallback-link-${index + 1}`,
+        href: url.href,
+        text: text.slice(0, 160),
+        hostname: url.hostname,
+        context: text.slice(0, 150),
+        is_search_result: mode === "search",
+        is_message_link: false
+      };
+    });
+
+  return {
+    links,
+    page_url: window.location.href,
+    page_title: document.title || "",
+    mode
+  };
+}
+
+async function scanLinksWithLimit(links, limit, onProgress) {
+  const results = [];
+  let nextIndex = 0;
+  let completed = 0;
+
+  async function worker() {
+    while (nextIndex < links.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      const link = links[currentIndex];
+
+      try {
+        const result = await analyzeUrlOnly(link.href);
+        results[currentIndex] = {
+          link,
+          result,
+          status: "ok",
+          classification: classifyLinkResult(result)
+        };
+      } catch (error) {
+        results[currentIndex] = {
+          link,
+          result: null,
+          status: "failed",
+          classification: { level: "unknown", label: "Unknown" }
+        };
+      }
+
+      completed += 1;
+      onProgress(completed, links.length);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(limit, links.length) }, worker));
+  return results;
+}
+
+function classifyLinkResult(result) {
+  const trustScore = Number(result?.trust_score);
+  const probability = Number(result?.phishing_probability);
+
+  if (
+    trustScore <= 30 ||
+    probability >= 0.75 ||
+    result?.risk_level === "high"
+  ) {
+    return { level: "high", label: "High Risk" };
+  }
+  if ((trustScore > 30 && trustScore <= 60) || result?.risk_level === "medium") {
+    return { level: "caution", label: "Caution" };
+  }
+  if (trustScore >= 80) {
+    return { level: "trusted", label: "Trusted" };
+  }
+  return { level: "low", label: "Low/Neutral" };
+}
+
+function renderLinkScanProgress(completed, total, message) {
+  linkScanPanelElement.hidden = false;
+  linkScanPanelElement.innerHTML = `
+    <div class="link-progress">
+      <span>${escapeHtml(message)}</span>
+      <strong>${total ? `${completed}/${total}` : ""}</strong>
+    </div>
+    <div class="link-progress-track"><span style="width:${total ? Math.round((completed / total) * 100) : 12}%;"></span></div>
+  `;
+}
+
+function renderLinkScanError(message, backendStatus = "offline") {
+  setBackendStatus(backendStatus);
+  linkScanPanelElement.hidden = false;
+  linkScanPanelElement.innerHTML = `<div class="link-scan-empty">${escapeHtml(message)}</div>`;
+}
+
+function renderLinkScanSummary(scanned) {
+  const summary = {
+    total: scanned.length,
+    trusted: scanned.filter((item) => item.classification.level === "trusted" || item.classification.level === "low").length,
+    caution: scanned.filter((item) => item.classification.level === "caution").length,
+    high: scanned.filter((item) => item.classification.level === "high").length,
+    unknown: scanned.filter((item) => item.classification.level === "unknown").length
+  };
+  const riskyLinks = scanned
+    .filter((item) => item.classification.level === "high" || item.classification.level === "caution")
+    .sort((a, b) => Number(a.result?.trust_score ?? 101) - Number(b.result?.trust_score ?? 101))
+    .slice(0, 5);
+
+  linkScanPanelElement.hidden = false;
+  linkScanPanelElement.innerHTML = "";
+
+  const summaryGrid = document.createElement("div");
+  summaryGrid.className = "link-summary-grid";
+  [
+    ["Total", summary.total],
+    ["Trusted/Low", summary.trusted],
+    ["Caution", summary.caution],
+    ["High Risk", summary.high],
+    ["Unknown", summary.unknown]
+  ].forEach(([label, value]) => {
+    const item = document.createElement("div");
+    item.className = "link-summary-item";
+    item.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
+    summaryGrid.appendChild(item);
+  });
+  linkScanPanelElement.appendChild(summaryGrid);
+
+  const heading = document.createElement("span");
+  heading.className = "link-risk-heading";
+  heading.textContent = riskyLinks.length ? "Top risky links" : "No caution or high-risk links found.";
+  linkScanPanelElement.appendChild(heading);
+
+  riskyLinks.forEach((item) => {
+    linkScanPanelElement.appendChild(createRiskyLinkCard(item));
+  });
+}
+
+function createRiskyLinkCard(item) {
+  const card = document.createElement("div");
+  card.className = `risky-link-card ${item.classification.level}`;
+  const topReason = item.result?.reasons?.[0] || "No specific reason returned.";
+  const title = item.link.text || item.link.hostname || item.link.href;
+
+  card.innerHTML = `
+    <strong>${escapeHtml(title)}</strong>
+    <p>${escapeHtml(item.link.hostname)} · ${escapeHtml(item.classification.label)} · Trust score ${item.result?.trust_score ?? "N/A"}</p>
+    <p>${escapeHtml(topReason)}</p>
+  `;
+
+  const actions = document.createElement("div");
+  actions.className = "candidate-actions";
+
+  const copyButton = document.createElement("button");
+  copyButton.className = "mini-button";
+  copyButton.type = "button";
+  copyButton.textContent = "Copy URL";
+  copyButton.addEventListener("click", () => copyText(item.link.href, copyButton, "Copied"));
+  actions.appendChild(copyButton);
+
+  if (item.classification.level === "high") {
+    const warningButton = document.createElement("button");
+    warningButton.className = "mini-button";
+    warningButton.type = "button";
+    warningButton.textContent = "Open Warning Report";
+    warningButton.addEventListener("click", async () => {
+      const tab = await getCurrentTab();
+      await chrome.runtime.sendMessage({
+        type: "TRUSTTRACE_OPEN_WARNING_FOR_URL",
+        tab_id: tab?.id,
+        url: item.link.href,
+        result: item.result
+      });
+    });
+    actions.appendChild(warningButton);
+  }
+
+  card.appendChild(actions);
+  return card;
+}
+
+function getLinkExtractionMode(url) {
+  try {
+    const parsedUrl = new URL(url);
+    const hostname = parsedUrl.hostname.toLowerCase();
+    if (
+      ((hostname === "google.com" || hostname.endsWith(".google.com")) && parsedUrl.pathname === "/search") ||
+      (hostname === "www.bing.com" && parsedUrl.pathname.startsWith("/search")) ||
+      ((hostname === "duckduckgo.com" || hostname === "www.duckduckgo.com") && (parsedUrl.pathname === "/" || parsedUrl.pathname.startsWith("/html"))) ||
+      ((hostname === "search.yahoo.com" || hostname === "www.yahoo.com") && parsedUrl.pathname.includes("search"))
+    ) {
+      return "search";
+    }
+  } catch (error) {
+    return "page";
+  }
+
+  return "page";
+}
+
+function dedupeLinks(links) {
+  const seen = new Set();
+  return links.filter((link) => {
+    const href = normalizeHref(link.href);
+    if (!href || seen.has(href)) {
+      return false;
+    }
+    seen.add(href);
+    link.href = href;
+    return true;
+  });
+}
+
+function normalizeHref(href) {
+  try {
+    const url = new URL(href);
+    url.hash = "";
+    return url.href;
+  } catch (error) {
+    return "";
+  }
+}
+
 async function scanMessageCandidate(candidate, pageContent) {
   statusElement.textContent = "Analyzing selected message only...";
   const sender = senderInputElement.value.trim() || candidate?.sender || "";
@@ -833,6 +1162,7 @@ Repeat Signals:
 
 rescanButton.addEventListener("click", scanCurrentUrl);
 scanMessageButton.addEventListener("click", scanEmailMessage);
+scanLinksButton.addEventListener("click", scanLinksOnPage);
 
 copyUrlButton.addEventListener("click", async () => {
   try {

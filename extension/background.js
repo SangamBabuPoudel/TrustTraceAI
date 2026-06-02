@@ -98,7 +98,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message?.type === "TRUSTTRACE_OPEN_WARNING_FOR_URL") {
-    const tabId = sender.tab?.id;
+    const tabId = sender.tab?.id || message.tab_id;
     if (!tabId || !message.url || !message.result) {
       sendResponse({ ok: false });
       return false;

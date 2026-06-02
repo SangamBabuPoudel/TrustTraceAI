@@ -1,7 +1,11 @@
 const MAX_VISIBLE_TEXT_LENGTH = 5000;
 const SEARCH_BADGE_ATTRIBUTE = "data-trusttrace-search-badge";
 const SEARCH_RESULT_ATTRIBUTE = "data-trusttrace-search-scanned";
-const MAX_SEARCH_RESULTS_TO_SCAN = 12;
+const SEARCH_BADGE_CLASS = "trusttrace-result-badge";
+const SEARCH_BADGE_WRAP_CLASS = "trusttrace-badge-row";
+const MAX_SEARCH_RESULTS_TO_SCAN = 15;
+const DEFAULT_VISIBLE_LINK_LIMIT = 25;
+const PAGE_LINK_SCAN_LIMIT = 30;
 const searchResultCache = new Map();
 let searchScanTimer = null;
 
@@ -9,6 +13,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message?.type === "SHOW_CAUTION_BANNER") {
     showCautionBanner(message.result);
     sendResponse({ ok: true });
+    return false;
+  }
+
+  if (message?.type === "TRUSTTRACE_EXTRACT_VISIBLE_LINKS") {
+    const mode = message.mode || "page";
+    sendResponse({
+      links: extractVisibleLinks({ mode }),
+      page_url: window.location.href,
+      page_title: document.title || "",
+      mode
+    });
     return false;
   }
 
@@ -83,13 +98,10 @@ function getSubmitText(submitButton) {
 }
 
 function collectVisibleLinks() {
-  return Array.from(document.querySelectorAll("a[href]"))
-    .filter((link) => link.innerText.trim() || link.href)
-    .slice(0, 30)
-    .map((link) => ({
-      text: link.innerText.replace(/\s+/g, " ").trim(),
-      href: link.href
-    }));
+  return extractVisibleLinks({ mode: "message", maxLinks: 30 }).map((link) => ({
+    text: link.text,
+    href: link.href
+  }));
 }
 
 function collectMessageCandidates() {
@@ -256,7 +268,7 @@ function showCautionBanner(result) {
 }
 
 function initSearchResultBadges() {
-  if (!isGoogleSearchResultsPage()) {
+  if (!isSearchResultsPage()) {
     return;
   }
 
@@ -278,16 +290,14 @@ function initSearchResultBadges() {
   });
 }
 
-function isGoogleSearchResultsPage() {
-  return (
-    location.hostname === "www.google.com" ||
-    location.hostname === "google.com" ||
-    location.hostname.endsWith(".google.com")
-  ) && location.pathname === "/search";
-}
-
 function scanVisibleSearchResults() {
-  const results = collectGoogleSearchResultLinks();
+  const results = extractVisibleLinks({
+    mode: "search",
+    maxLinks: MAX_SEARCH_RESULTS_TO_SCAN
+  }).map((result) => ({
+    link: document.querySelector(`[data-trusttrace-link-id="${cssEscape(result.id)}"]`),
+    targetUrl: result.href
+  })).filter((result) => result.link);
 
   results.forEach(({ link, targetUrl }) => {
     if (link.getAttribute(SEARCH_RESULT_ATTRIBUTE) === targetUrl) {
@@ -297,7 +307,7 @@ function scanVisibleSearchResults() {
     link.setAttribute(SEARCH_RESULT_ATTRIBUTE, targetUrl);
     const badge = attachSearchResultBadge(link, targetUrl);
     updateSearchBadge(badge, {
-      label: "Scanning",
+      label: "TrustTrace: Unknown",
       level: "pending",
       title: "TrustTrace AI is checking this result URL."
     });
@@ -308,7 +318,7 @@ function scanVisibleSearchResults() {
       })
       .catch(() => {
         updateSearchBadge(badge, {
-          label: "Offline",
+          label: "TrustTrace: Unknown",
           level: "offline",
           title: "TrustTrace AI backend is unavailable."
         });
@@ -316,18 +326,80 @@ function scanVisibleSearchResults() {
   });
 }
 
-function collectGoogleSearchResultLinks() {
+function extractVisibleLinks(options = {}) {
+  const mode = options.mode || "page";
+  const maxLinks = options.maxLinks || getLinkLimit(mode);
   const seenUrls = new Set();
-  return Array.from(document.querySelectorAll("#search a[href]"))
-    .map((link) => ({ link, targetUrl: extractSearchResultUrl(link) }))
-    .filter(({ link, targetUrl }) => {
-      if (!targetUrl || seenUrls.has(targetUrl) || !isSearchResultLink(link, targetUrl)) {
+  const candidates = getVisibleLinkCandidates(mode);
+
+  return candidates
+    .map((link) => buildVisibleLinkRecord(link, mode))
+    .filter((record) => {
+      if (!record || seenUrls.has(record.href)) {
         return false;
       }
-      seenUrls.add(targetUrl);
+      seenUrls.add(record.href);
       return true;
     })
-    .slice(0, MAX_SEARCH_RESULTS_TO_SCAN);
+    .slice(0, maxLinks);
+}
+
+function getLinkLimit(mode) {
+  if (mode === "search") {
+    return MAX_SEARCH_RESULTS_TO_SCAN;
+  }
+  if (mode === "page") {
+    return PAGE_LINK_SCAN_LIMIT;
+  }
+  return DEFAULT_VISIBLE_LINK_LIMIT;
+}
+
+function getVisibleLinkCandidates(mode) {
+  if (mode === "search" || isSearchResultsPage()) {
+    return getSearchResultLinkCandidates();
+  }
+
+  return Array.from(document.querySelectorAll("a[href]"))
+    .filter((link) => isAllowedVisibleLink(link) && !isLikelyNavigationOrClutter(link));
+}
+
+function getSearchResultLinkCandidates() {
+  const engine = getSearchEngine();
+  const selectorsByEngine = {
+    google: "#search a[href]",
+    bing: "#b_results .b_algo h2 a[href], #b_results .b_title a[href]",
+    duckduckgo: "article a[href], [data-testid='result-title-a'][href], .result__title a[href]",
+    yahoo: "#web a[href], .algo a[href]"
+  };
+  const selector = selectorsByEngine[engine] || "a[href]";
+
+  return Array.from(document.querySelectorAll(selector))
+    .filter((link) => isAllowedVisibleLink(link) && isSearchResultLink(link, extractSearchResultUrl(link)));
+}
+
+function buildVisibleLinkRecord(link, mode) {
+  const href = extractSearchResultUrl(link);
+  if (!href || !isAllowedHref(href)) {
+    return null;
+  }
+
+  try {
+    const url = new URL(href);
+    const id = buildLinkId(href);
+    link.setAttribute("data-trusttrace-link-id", id);
+
+    return {
+      id,
+      href: url.href,
+      text: getLinkText(link).slice(0, 160),
+      hostname: url.hostname,
+      context: getSurroundingContext(link).slice(0, 150),
+      is_search_result: mode === "search" || isSearchResultLink(link, href),
+      is_message_link: isInsideMessageLikeArea(link)
+    };
+  } catch (error) {
+    return null;
+  }
 }
 
 function extractSearchResultUrl(link) {
@@ -346,44 +418,165 @@ function extractSearchResultUrl(link) {
 function isSearchResultLink(link, targetUrl) {
   try {
     const target = new URL(targetUrl);
-    const hasResultTitle = Boolean(link.querySelector("h3") || link.closest("[data-sokoban-container]")?.querySelector("h3"));
+    const engine = getSearchEngine();
+    const hasResultTitle = Boolean(
+      link.querySelector("h3") ||
+      link.closest("[data-sokoban-container]")?.querySelector("h3") ||
+      link.closest(".b_algo") ||
+      link.closest("article") ||
+      link.closest(".algo")
+    );
     const isWebUrl = ["http:", "https:"].includes(target.protocol);
+    const isSearchEngineUtility = isSearchEngineHostname(target.hostname) && !isLikelyOfficialSearchResult(link, engine);
 
-    return hasResultTitle && isWebUrl && isVisible(link);
+    return hasResultTitle && isWebUrl && !isSearchEngineUtility && isVisible(link);
   } catch (error) {
     return false;
   }
 }
 
 function attachSearchResultBadge(link, targetUrl) {
-  const existingBadge = link.parentElement?.querySelector(
-    `[${SEARCH_BADGE_ATTRIBUTE}="${cssEscape(targetUrl)}"]`
+  injectSearchBadgeStyles();
+
+  const insertionTarget = getSearchBadgeInsertionTarget(link);
+  const existingBadge = insertionTarget.parentElement?.querySelector(
+    `.${SEARCH_BADGE_WRAP_CLASS}[data-trusttrace-url="${cssEscape(targetUrl)}"] .${SEARCH_BADGE_CLASS}`
   );
   if (existingBadge) {
     return existingBadge;
   }
 
-  const badge = document.createElement("button");
-  badge.type = "button";
-  badge.setAttribute(SEARCH_BADGE_ATTRIBUTE, targetUrl);
-  badge.style.cssText = [
-    "display:inline-flex",
-    "align-items:center",
-    "gap:5px",
-    "margin-left:8px",
-    "padding:3px 8px",
-    "border-radius:999px",
-    "border:1px solid rgba(148,163,184,0.55)",
-    "font:600 11px/1.2 Arial,sans-serif",
-    "vertical-align:middle",
-    "cursor:default",
-    "transition:background 160ms ease,border-color 160ms ease,color 160ms ease,transform 160ms ease",
-    "box-shadow:0 2px 8px rgba(15,23,42,0.12)"
-  ].join(";");
+  const wrapper = document.createElement("div");
+  wrapper.className = SEARCH_BADGE_WRAP_CLASS;
+  wrapper.setAttribute("data-trusttrace-url", targetUrl);
 
-  const title = link.querySelector("h3") || link;
-  title.insertAdjacentElement("afterend", badge);
+  const badge = document.createElement("span");
+  badge.className = SEARCH_BADGE_CLASS;
+  badge.setAttribute(SEARCH_BADGE_ATTRIBUTE, "true");
+  badge.setAttribute("role", "status");
+
+  wrapper.appendChild(badge);
+  insertionTarget.insertAdjacentElement("afterend", wrapper);
   return badge;
+}
+
+function injectSearchBadgeStyles() {
+  if (document.getElementById("trusttrace-search-badge-styles")) {
+    return;
+  }
+
+  const style = document.createElement("style");
+  style.id = "trusttrace-search-badge-styles";
+  style.textContent = `
+    .${SEARCH_BADGE_WRAP_CLASS},
+    .${SEARCH_BADGE_WRAP_CLASS} * {
+      all: initial !important;
+      box-sizing: border-box !important;
+      font-family: Arial, sans-serif !important;
+      direction: ltr !important;
+      unicode-bidi: isolate !important;
+      writing-mode: horizontal-tb !important;
+      text-orientation: mixed !important;
+      transform: none !important;
+    }
+
+    .${SEARCH_BADGE_WRAP_CLASS} {
+      display: block !important;
+      margin: 6px 0 4px 0 !important;
+      padding: 0 !important;
+      width: max-content !important;
+      max-width: 100% !important;
+      position: static !important;
+      float: none !important;
+      clear: both !important;
+      background: transparent !important;
+    }
+
+    .${SEARCH_BADGE_CLASS} {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      white-space: nowrap !important;
+      direction: ltr !important;
+      unicode-bidi: isolate !important;
+      writing-mode: horizontal-tb !important;
+      transform: none !important;
+      rotate: none !important;
+      scale: none !important;
+      font-size: 12px !important;
+      font-weight: 700 !important;
+      line-height: 1 !important;
+      padding: 5px 10px !important;
+      border-radius: 999px !important;
+      border: 1px solid rgba(148, 163, 184, 0.55) !important;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.12) !important;
+      cursor: default !important;
+      user-select: none !important;
+    }
+  `;
+  document.documentElement.appendChild(style);
+}
+
+function getSearchBadgeInsertionTarget(link) {
+  if (getSearchEngine() !== "google") {
+    return link.querySelector("h3")?.closest("a") || link;
+  }
+
+  const titleAnchor = (link.querySelector("h3") ? link : link.closest("a")) || link;
+  const titleContainer = titleAnchor.closest(".yuRUbf") || titleAnchor.parentElement || titleAnchor;
+  const resultContainer = titleAnchor.closest(".MjjYud, .g, [data-sokoban-container]") || titleContainer;
+
+  return findStableBadgeInsertionTarget(titleContainer, resultContainer);
+}
+
+function isUnsafeGoogleBadgeContainer(element) {
+  return Boolean(
+    element?.closest("svg, cite, g-menu, [role='menu'], [aria-haspopup], .VuuXrf, .qLRx3b")
+  );
+}
+
+function findStableBadgeInsertionTarget(preferredTarget, resultContainer) {
+  let insertionTarget = preferredTarget;
+  let current = preferredTarget;
+
+  while (current && current !== document.body) {
+    if (isUnsafeGoogleBadgeContainer(current) || hasTransformOrVerticalText(current)) {
+      insertionTarget = current;
+    }
+    if (current === resultContainer) {
+      break;
+    }
+    current = current.parentElement;
+  }
+
+  return insertionTarget;
+}
+
+function hasTransformOrVerticalText(element) {
+  const style = window.getComputedStyle(element);
+  return (
+    style.transform !== "none" ||
+    style.rotate !== "none" ||
+    style.scale !== "none" ||
+    style.writingMode !== "horizontal-tb" ||
+    style.direction !== "ltr"
+  );
+}
+
+function resetSearchBadgeOrientation(badge) {
+  badge.style.display = "inline-flex";
+  badge.style.alignItems = "center";
+  badge.style.justifyContent = "center";
+  badge.style.writingMode = "horizontal-tb";
+  badge.style.direction = "ltr";
+  badge.style.unicodeBidi = "isolate";
+  badge.style.textOrientation = "mixed";
+  badge.style.transform = "none";
+  badge.style.rotate = "none";
+  badge.style.scale = "none";
+  badge.style.whiteSpace = "nowrap";
+  badge.style.fontSize = "12px";
+  badge.style.lineHeight = "1";
 }
 
 async function analyzeSearchResult(targetUrl) {
@@ -407,9 +600,10 @@ async function analyzeSearchResult(targetUrl) {
 function updateSearchBadgeFromResult(badge, targetUrl, result) {
   const level = getSearchBadgeLevel(result);
   const labels = {
-    trusted: "Trusted",
-    caution: "Caution",
-    high: "High Risk"
+    trusted: `TrustTrace: Trusted ${result?.trust_score ?? ""}`,
+    low: `TrustTrace: Trusted ${result?.trust_score ?? ""}`,
+    caution: `TrustTrace: Caution ${result?.trust_score ?? ""}`,
+    high: `TrustTrace: High Risk ${result?.trust_score ?? ""}`
   };
 
   updateSearchBadge(badge, {
@@ -419,7 +613,9 @@ function updateSearchBadgeFromResult(badge, targetUrl, result) {
   });
 
   if (level === "high") {
-    badge.style.cursor = "pointer";
+    badge.setAttribute("role", "button");
+    badge.setAttribute("tabindex", "0");
+    badge.style.setProperty("cursor", "pointer", "important");
     badge.addEventListener("click", (event) => {
       event.preventDefault();
       event.stopPropagation();
@@ -433,6 +629,10 @@ function updateSearchBadgeFromResult(badge, targetUrl, result) {
 }
 
 function getSearchBadgeLevel(result) {
+  return classifyLinkRisk(result).level;
+}
+
+function classifyLinkRisk(result) {
   const trustScore = Number(result?.trust_score);
   const probability = Number(result?.phishing_probability);
 
@@ -441,14 +641,18 @@ function getSearchBadgeLevel(result) {
     probability >= 0.75 ||
     (result?.risk_level === "high" && result?.confidence === "high")
   ) {
-    return "high";
+    return { level: "high", label: "High Risk" };
   }
 
   if ((trustScore > 30 && trustScore <= 60) || result?.risk_level === "medium") {
-    return "caution";
+    return { level: "caution", label: "Caution" };
   }
 
-  return "trusted";
+  if (trustScore >= 80) {
+    return { level: "trusted", label: "Trusted" };
+  }
+
+  return { level: "low", label: "Low" };
 }
 
 function updateSearchBadge(badge, state) {
@@ -462,6 +666,11 @@ function updateSearchBadge(badge, state) {
       text: "#065f46",
       background: "#d1fae5",
       border: "#34d399"
+    },
+    low: {
+      text: "#0f766e",
+      background: "#ccfbf1",
+      border: "#5eead4"
     },
     caution: {
       text: "#78350f",
@@ -483,15 +692,113 @@ function updateSearchBadge(badge, state) {
 
   badge.textContent = state.label;
   badge.title = state.title;
-  badge.style.color = style.text;
-  badge.style.background = style.background;
-  badge.style.borderColor = style.border;
+  resetSearchBadgeOrientation(badge);
+  badge.style.setProperty("color", style.text, "important");
+  badge.style.setProperty("background", style.background, "important");
+  badge.style.setProperty("border-color", style.border, "important");
 }
 
 function buildSearchBadgeTitle(result) {
   const probability = Math.round((Number(result?.phishing_probability) || 0) * 100);
-  const topReason = result?.reasons?.[0] ? ` Reason: ${result.reasons[0]}` : "";
+  const topReasons = (result?.reasons || []).slice(0, 2).join(" ");
+  const topReason = topReasons ? ` Reason: ${topReasons}` : "";
   return `TrustTrace AI: ${result?.risk_level || "low"} risk, trust score ${result?.trust_score ?? "N/A"}, phishing probability ${probability}%.${topReason}`;
+}
+
+function isSearchResultsPage() {
+  return Boolean(getSearchEngine());
+}
+
+function getSearchEngine() {
+  const hostname = location.hostname.toLowerCase();
+  const path = location.pathname;
+
+  if ((hostname === "google.com" || hostname.endsWith(".google.com")) && path === "/search") {
+    return "google";
+  }
+  if (hostname === "www.bing.com" && path.startsWith("/search")) {
+    return "bing";
+  }
+  if ((hostname === "duckduckgo.com" || hostname === "www.duckduckgo.com") && (path === "/" || path.startsWith("/html"))) {
+    return "duckduckgo";
+  }
+  if ((hostname === "search.yahoo.com" || hostname === "www.yahoo.com") && path.includes("search")) {
+    return "yahoo";
+  }
+
+  return "";
+}
+
+function isSearchEngineHostname(hostname) {
+  return (
+    hostname.endsWith("google.com") ||
+    hostname.endsWith("bing.com") ||
+    hostname.endsWith("duckduckgo.com") ||
+    hostname.endsWith("yahoo.com")
+  );
+}
+
+function isLikelyOfficialSearchResult(link, engine) {
+  if (engine === "google") {
+    return Boolean(link.querySelector("h3"));
+  }
+  return Boolean(link.closest(".b_algo, article, .algo"));
+}
+
+function isAllowedVisibleLink(link) {
+  const href = extractSearchResultUrl(link);
+  return Boolean(href && isAllowedHref(href) && isVisible(link) && getLinkText(link));
+}
+
+function isAllowedHref(href) {
+  try {
+    const url = new URL(href, window.location.href);
+    if (!["http:", "https:"].includes(url.protocol)) {
+      return false;
+    }
+    if (url.href.split("#")[0] === window.location.href.split("#")[0] && url.hash) {
+      return false;
+    }
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+function isLikelyNavigationOrClutter(link) {
+  const container = link.closest("nav, header, footer, aside, [role='navigation']");
+  const text = getLinkText(link).toLowerCase();
+  const href = link.href.toLowerCase();
+  const rect = link.getBoundingClientRect();
+  const isTinyIcon = rect.width < 32 && rect.height < 32 && text.length < 3;
+  const looksLikeShare = /(share|facebook|twitter|x\.com|linkedin|pinterest|reddit|mailto)/.test(`${text} ${href}`);
+
+  return Boolean(container || isTinyIcon || looksLikeShare);
+}
+
+function getLinkText(link) {
+  return (link.innerText || link.textContent || link.getAttribute("aria-label") || link.href || "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function getSurroundingContext(link) {
+  const container = link.closest("article, section, li, p, div, [role='article'], .trusttrace-message-card") || link;
+  return (container.innerText || getLinkText(link)).replace(/\s+/g, " ").trim();
+}
+
+function isInsideMessageLikeArea(link) {
+  return Boolean(
+    link.closest(".trusttrace-message-card, [data-trusttrace-message], [data-sender], [data-subject], article, [role='article'], .message, .email, .mail, .conversation, .chat-message")
+  );
+}
+
+function buildLinkId(href) {
+  let hash = 0;
+  for (let index = 0; index < href.length; index += 1) {
+    hash = ((hash << 5) - hash + href.charCodeAt(index)) | 0;
+  }
+  return `trusttrace-link-${Math.abs(hash)}`;
 }
 
 function cssEscape(value) {

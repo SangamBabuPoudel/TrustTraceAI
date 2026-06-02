@@ -6,6 +6,7 @@ TrustTrace AI starts as a local browser extension plus FastAPI backend.
 
 - Chrome extension popup: reads the active tab URL and displays the analysis result.
 - Chrome extension service worker: checks navigations with `/api/analyze-url` before or during page load.
+- Universal Link Intelligence content script: extracts visible links, annotates search results, and supplies page-wide link lists to the popup.
 - Warning interstitial: blocks high-risk destinations and lets users go back or proceed for the current session.
 - Caution banner: warns on medium-risk destinations after the page loads.
 - FastAPI backend: exposes local analysis endpoints for the extension.
@@ -36,6 +37,15 @@ TrustTrace AI starts as a local browser extension plus FastAPI backend.
 5. Medium-risk results allow the page to load and inject a yellow caution banner.
 6. Proceed Anyway stores a temporary session bypass for the exact URL.
 7. High-risk URLs/domains are cached locally so repeat visits warn faster.
+
+## Universal Link Intelligence Flow
+
+1. On Google, Bing, DuckDuckGo, and Yahoo result pages, the content script extracts visible organic result links.
+2. Each result URL is sent through the service worker to `POST /api/analyze-url`.
+3. The page receives a small TrustTrace badge: Trusted, Low, Caution, High Risk, or Unknown.
+4. On any normal webpage, the popup can request visible links from the content script with `TRUSTTRACE_EXTRACT_VISIBLE_LINKS`.
+5. The popup scans unique visible URLs with limited concurrency and shows totals plus the riskiest links.
+6. High-risk clicks are still handled by the existing pre-visit warning system; link scanning does not navigate automatically.
 
 ## Multi-Layer URL Pipeline
 

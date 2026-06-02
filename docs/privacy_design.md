@@ -16,6 +16,8 @@ TrustTrace AI should be privacy-first by default.
 - No account system: the MVP does not require user identity.
 - No tracking: the MVP does not include analytics, ads, or behavioral tracking.
 - Pre-visit protection sends only the destination URL to the local backend. Page content is not collected for pre-visit warnings.
+- Link scanning sends only visible link URLs plus lightweight link text/context. It does not collect search query text, cookies, passwords, hidden form values, or full page text for link-only scans.
+- Search result annotation scans visible result URLs only and avoids navigation/sidebar links where possible.
 
 ## Message Scan Storage
 
@@ -39,6 +41,13 @@ Repeated message detection uses a local SQLite database at `backend/trusttrace.d
 - High-risk pre-visit detections are cached locally in Chrome storage with URL, hostname, risk score, reasons, and timestamp.
 - Proceed Anyway stores a temporary session allow decision for the exact URL only.
 - The bypass is not a permanent whitelist.
+
+## Universal Link Intelligence
+
+- Page-wide link scans are user-controlled from the popup.
+- Search result badges are URL-only annotations for visible results.
+- Email/message pages can provide visible links for link scanning, but full mailbox scanning is not performed.
+- High-risk link clicks are handled by the existing pre-visit warning page rather than a separate blocking system.
 
 ## Future Privacy Requirements
 
