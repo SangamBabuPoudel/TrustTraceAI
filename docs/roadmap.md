@@ -17,6 +17,7 @@
 | MVP 11 | Complete | Clipboard Guardian Mode with opt-in local clipboard checks and copy-value mismatch warnings. |
 | MVP 12 | Complete | Visual Clone Intelligence using metadata-only brand claim, logo/favicons, layout, and domain mismatch checks. |
 | MVP 13 | Complete | Demo Mode with clearly labeled sample scenarios, demo page links, and a static portfolio dashboard. |
+| Final QA | Complete | Manual testing checklist, QA command reference, API regression script, and local regression dashboard. |
 
 ## Future Work
 

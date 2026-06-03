@@ -198,7 +198,25 @@ Use this as a quick portfolio walkthrough:
 - `extension/test-attack-explanations.html` - examples for attack explanation mode.
 - `extension/test-clipboard-guardian.html` - clipboard risk scenarios.
 - `extension/test-visual-clone.html` - metadata-only visual brand clone scenarios.
+- `extension/test-regression-dashboard.html` - final QA dashboard linking to regression fixtures and test URLs.
 - `extension/demo.html` - static portfolio demo dashboard.
+
+## Quality Assurance / Regression Testing
+
+TrustTrace AI includes a final QA workflow for manual and API regression checks:
+
+- Manual checklist: [docs/testing_checklist.md](docs/testing_checklist.md)
+- QA command reference: [docs/qa_commands.md](docs/qa_commands.md)
+- API regression script: `backend/tests/regression_api_tests.py`
+- Local regression dashboard: `http://127.0.0.1:5500/extension/test-regression-dashboard.html`
+
+Run the API regression script while the backend is running:
+
+```bash
+python3 backend/tests/regression_api_tests.py
+```
+
+The regression suite checks official trusted domains, trusted commerce product context, fake phishing URLs, typosquatting/lookalike cases, and false-positive protections.
 
 ## Privacy And Safety
 
@@ -235,6 +253,7 @@ Completed:
 - MVP 11: Clipboard Guardian Mode.
 - MVP 12: Visual Clone Intelligence.
 - MVP 13: Demo Mode.
+- Final QA / Regression Test Suite.
 
 Future:
 

@@ -1,124 +1,208 @@
 # Testing Checklist
 
-Use this checklist before recording a demo or submitting the project.
+Use this checklist before recording a demo, submitting the project, or making a release-style commit.
 
-## Backend
+## Environment Setup
 
-- [ ] Start backend at `http://127.0.0.1:8000`.
-- [ ] Confirm `GET /health` returns `{ "status": "ok" }`.
-- [ ] Run `python3 -B -m compileall backend/app`.
+- [ ] Backend is running at `http://127.0.0.1:8000`.
+- [ ] `GET /health` returns `{ "status": "ok" }`.
+- [ ] Chrome Developer Mode is enabled in `chrome://extensions`.
+- [ ] TrustTrace AI extension is reloaded after the latest code changes.
+- [ ] Local test server is running from the repository root with `python3 -m http.server 5500`.
+- [ ] Local regression dashboard opens at `http://127.0.0.1:5500/extension/test-regression-dashboard.html`.
 
-## Extension
+## Official Trusted Domains
 
-- [ ] Reload unpacked extension in `chrome://extensions`.
-- [ ] Confirm popup opens without console errors.
-- [ ] Run `node --check extension/background.js`.
-- [ ] Run `node --check extension/content.js`.
-- [ ] Run `node --check extension/popup.js`.
-- [ ] Run `node --check extension/warning.js`.
-- [ ] Run `node --check extension/demoScenarios.js`.
-- [ ] Run `node --check extension/demo.js`.
+Test:
 
-## Demo Mode
+- [ ] `https://www.apple.com`
+- [ ] `https://support.apple.com`
+- [ ] `https://openai.com`
+- [ ] `https://chatgpt.com`
+- [ ] `https://claude.ai`
+- [ ] `https://gemini.google.com`
+- [ ] `https://www.youtube.com`
+- [ ] `https://www.verizon.com/shop/online/free-cell-phones/apple/`
 
-- [ ] Open the popup and click Run Demo Scan.
-- [ ] Confirm demo cards appear and say “Demo result — no private data scanned.”
-- [ ] Confirm scenarios cover trusted official site, fake phishing URL, visual clone, scam message, Clipboard Guardian, Universal Link Intelligence, HTTP caution, and report card.
-- [ ] Click Copy Demo Summary and confirm summary text copies.
-- [ ] Click Open Demo Pages and confirm local demo page links appear.
-- [ ] Open `http://127.0.0.1:5500/extension/demo.html` and confirm the static dashboard renders.
-- [ ] Confirm running Demo Mode does not change Security Report Card counters.
+Expected:
 
-## Official Websites
+- Low Risk.
+- High trust score.
+- No false Visual Clone Intelligence warning.
+- No false brand impersonation warning.
+- Official/trusted context signals may appear.
 
-- [ ] Scan `https://www.apple.com`.
-- [ ] Scan `https://openai.com`.
-- [ ] Confirm low risk and high trust score.
-- [ ] Confirm no brand impersonation warning.
+## Fake Phishing URLs
 
-## Fake Phishing Links
+Test:
+
+- [ ] `http://apple-login-security.example.com/verify`
+- [ ] `https://openai-login-verify.example.com/password`
+- [ ] `https://claude-security-login.example.com`
+- [ ] `https://gemini-google-verify-account.xyz/login`
+- [ ] `https://gooogle-login.example.com`
+
+Expected:
+
+- High Risk or Caution depending signal strength.
+- Fake brand, typosquatting, lookalike, or impersonation reasons appear.
+- URLs with trust score `<= 30` trigger the warning page through pre-visit protection.
+
+## Pre-Visit Warning Page
 
 - [ ] Open `extension/test-previsit-links.html`.
-- [ ] Click fake Apple phishing link.
-- [ ] Confirm high-risk warning page appears.
-- [ ] Confirm Proceed Anyway bypass works only for the current session.
+- [ ] Click a high-risk fake link.
+- [ ] Confirm `warning.html` appears.
+- [ ] Confirm Go Back to Safety works.
+- [ ] Confirm Proceed Anyway navigates to the original URL.
+- [ ] Confirm Proceed Anyway creates only a session bypass, not a permanent allowlist.
 
-## Fake Login Page
+## Medium-Risk Caution Banner
+
+- [ ] Test a medium-risk HTTP, shortened, or suspicious link.
+- [ ] Confirm the page loads without redirecting to `warning.html`.
+- [ ] Confirm yellow caution banner appears.
+- [ ] Confirm Dismiss button removes the banner.
+
+## Page Content Scanning
 
 - [ ] Open `extension/test-phishing.html`.
-- [ ] Scan with popup.
-- [ ] Confirm page content and form signals appear.
-- [ ] Confirm high risk for urgent password/account verification form.
+- [ ] Scan with the popup.
+- [ ] Confirm urgent language is detected.
+- [ ] Confirm account-threat language is detected.
+- [ ] Confirm credential language is detected.
 
-## Scam Message Page
+## Fake Login Form Detection
+
+- [ ] Open a fake login page with email and password fields.
+- [ ] Confirm form signals are shown.
+- [ ] Confirm password field is detected.
+- [ ] Confirm suspicious submit text is detected.
+- [ ] Confirm high risk when suspicious page content and credential form context exist together.
+
+## Email/Message Threat Detection
 
 - [ ] Open `extension/test-scam-message.html`.
-- [ ] Enter `google.security.alert@gmail.com`.
-- [ ] Scan Email/Message.
-- [ ] Confirm sender, message, and link signals.
-- [ ] Scan again and confirm repeat count increases.
+- [ ] Enter `google.security.alert@gmail.com` as sender.
+- [ ] Click Scan Email/Message.
+- [ ] Confirm sender impersonation is detected.
+- [ ] Confirm urgent credential language is detected.
+- [ ] Confirm suspicious links are detected.
+- [ ] Scan the same message twice.
+- [ ] Confirm repeat count increases.
 
-## Universal Link Scan
+## Universal Link Intelligence
 
 - [ ] Open `extension/test-universal-links.html`.
 - [ ] Click Scan Links on This Page.
-- [ ] Confirm progress appears.
-- [ ] Confirm summary counts for trusted, caution, high risk, and unknown.
-- [ ] Confirm top risky links show reasons and Copy URL buttons.
+- [ ] Confirm safe official links are trusted.
+- [ ] Confirm fake links are High Risk or Caution.
+- [ ] Confirm scan summary counts are reasonable.
+- [ ] Confirm top risky links are shown with reasons.
 
-## Search Annotation
+## Search Result Annotation
 
-- [ ] Open a Google search results page.
-- [ ] Confirm TrustTrace badges appear beside or below result titles.
-- [ ] Confirm badge text is readable and not mirrored.
-- [ ] Repeat on Bing, DuckDuckGo, or Yahoo if available.
+- [ ] Open Google search for `apple login`.
+- [ ] Confirm TrustTrace badges are visible beside or below result titles.
+- [ ] Confirm official links are trusted.
+- [ ] Confirm badge text is readable and not flipped or mirrored.
 
-## Warning Page And Caution Banner
-
-- [ ] Confirm high-risk URLs open `warning.html`.
-- [ ] Confirm medium-risk pages show yellow caution banner.
-- [ ] Confirm warning page includes attack explanation.
-
-## Attack Explanation Mode
-
-- [ ] Open `extension/test-attack-explanations.html`.
-- [ ] Scan fake Apple/OpenAI links.
-- [ ] Confirm credential phishing or brand impersonation explanations.
-- [ ] Scan typo/lookalike domain.
-- [ ] Confirm typosquatting/lookalike explanation.
-- [ ] Scan HTTP password form page.
-- [ ] Confirm insecure credential collection explanation.
-
-## Personal Security Report Card
-
-- [ ] Open the popup and confirm Security Report appears.
-- [ ] Run a page scan and confirm URL/page counters increase.
-- [ ] Trigger a high-risk warning and confirm high-risk blocks increase.
-- [ ] Trigger a medium-risk page and confirm caution warnings increase.
-- [ ] Run Scan Links on This Page and confirm link scan counters increase.
-- [ ] Scan a scam message and confirm suspicious message counters increase.
-- [ ] Scan the same scam message twice and confirm repeated scam warning counter increases.
-- [ ] Click Reset Local Stats and confirm counters reset after confirmation.
-
-## Clipboard Guardian Mode
+## Clipboard Guardian
 
 - [ ] Open `extension/test-clipboard-guardian.html`.
 - [ ] Confirm Clipboard Guardian is off by default.
 - [ ] Turn Clipboard Guardian on.
-- [ ] Copy the suspicious URL and click Scan Clipboard Now.
-- [ ] Confirm suspicious URL warning appears.
-- [ ] Copy the wallet mismatch button and confirm page warning appears.
-- [ ] Copy/sample scan OTP text and confirm OTP/security-code warning appears.
-- [ ] Scan recovery phrase/private key text and confirm high-risk warning appears.
-- [ ] Copy official Apple URL and confirm low-risk or safe URL handling.
-- [ ] Confirm report-card clipboard counters increase without storing raw text.
+- [ ] Copy suspicious URL and click Scan Clipboard Now.
+- [ ] Confirm suspicious URL is detected.
+- [ ] Click wallet mismatch copy button.
+- [ ] Confirm wallet mismatch warning appears.
+- [ ] Confirm OTP/security-code prompt warning appears.
+- [ ] Confirm recovery phrase/private key warning appears.
+- [ ] Copy safe Apple URL and confirm low-risk or safe handling.
+- [ ] Confirm raw clipboard text is not stored.
 
 ## Visual Clone Intelligence
 
 - [ ] Open `extension/test-visual-clone.html`.
 - [ ] Scan with the popup.
+- [ ] Confirm fake branded login clone is High Risk.
 - [ ] Confirm Visual Clone Intelligence panel appears.
-- [ ] Confirm claimed brands include Apple, Google, and OpenAI/ChatGPT signals.
-- [ ] Confirm high risk due to branded login forms on localhost.
-- [ ] Confirm attack explanation mentions visual brand cloning or fake login page.
-- [ ] Confirm no screenshots, image binaries, or canvas pixels are collected.
+- [ ] Confirm visual clone signals are shown.
+- [ ] Confirm official Apple pages are not falsely flagged.
+- [ ] Confirm Verizon Apple product page is not falsely flagged.
+
+## Attack Explanation Mode
+
+- [ ] Scan a fake phishing URL or fake login page.
+- [ ] Confirm attack type is shown.
+- [ ] Confirm summary is shown.
+- [ ] Confirm What to Avoid guidance is shown.
+- [ ] Confirm Safer Action guidance is shown.
+- [ ] Scan a safe page and confirm calm/no strong attack pattern explanation.
+
+## Security Report Card
+
+- [ ] Run a URL/page scan and confirm scan counters increase.
+- [ ] Trigger a high-risk warning and confirm high-risk block count increases.
+- [ ] Trigger a caution banner and confirm caution count increases.
+- [ ] Run Scan Links on This Page and confirm link scan counters increase.
+- [ ] Scan a suspicious message and confirm suspicious message count increases.
+- [ ] Confirm no sensitive content is stored.
+- [ ] Click Reset Local Stats and confirm counters reset after confirmation.
+
+## Demo Mode
+
+- [ ] Open the popup and click Run Demo Scan.
+- [ ] Confirm demo cards render.
+- [ ] Confirm demo cards are clearly labeled as demo results.
+- [ ] Confirm Demo Mode does not change Security Report Card counters.
+- [ ] Click Copy Demo Summary and confirm summary text copies.
+- [ ] Click Open Demo Pages and confirm local demo page links appear.
+- [ ] Open `http://127.0.0.1:5500/extension/demo.html` and confirm static dashboard renders.
+
+## Offline Behavior
+
+- [ ] Stop the backend server.
+- [ ] Open the popup and run a scan.
+- [ ] Confirm popup shows Backend unavailable.
+- [ ] Reload a search page.
+- [ ] Confirm search badges show Unknown/Offline if annotation runs.
+- [ ] Confirm page does not break.
+
+## Validation Commands
+
+- [ ] Run `python3 -B -m compileall backend/app`.
+- [ ] Run `node --check extension/background.js`.
+- [ ] Run `node --check extension/content.js`.
+- [ ] Run `node --check extension/popup.js`.
+- [ ] Run `node --check extension/warning.js`.
+- [ ] Run `node --check extension/clipboardGuardian.js`.
+- [ ] Run `node --check extension/securityStats.js`.
+- [ ] Run `node --check extension/demoScenarios.js`.
+- [ ] Run `node --check extension/demo.js`.
+- [ ] Run `python3 backend/tests/regression_api_tests.py` while backend is running.
+
+## Regression Pass/Fail Table
+
+| Feature | Test URL/Page | Expected Result | Actual Result | Pass/Fail | Notes |
+|---|---|---|---|---|---|
+| Official trusted domain | `https://www.apple.com` | Low Risk, high trust, no impersonation warning |  |  |  |
+| Official trusted domain | `https://support.apple.com` | Low Risk, official Apple trust signal |  |  |  |
+| Official trusted domain | `https://openai.com` | Low Risk, official OpenAI trust signal |  |  |  |
+| Trusted commerce context | `https://www.verizon.com/shop/online/free-cell-phones/apple/` | Low Risk, no Apple clone warning |  |  |  |
+| Fake phishing URL | `http://apple-login-security.example.com/verify` | High Risk, warning eligible |  |  |  |
+| Fake phishing URL | `https://openai-login-verify.example.com/password` | High Risk, fake brand/login reasons |  |  |  |
+| Typosquatting | `https://gooogle-login.example.com` | Caution/High Risk, lookalike reason |  |  |  |
+| Pre-visit warning | `extension/test-previsit-links.html` | High-risk links open warning page |  |  |  |
+| Caution banner | Medium-risk HTTP/shortened link | Yellow banner appears and dismisses |  |  |  |
+| Page content scan | `extension/test-phishing.html` | Urgent/account/credential language detected |  |  |  |
+| Fake login form | `extension/test-phishing.html` | Form signals and high risk |  |  |  |
+| Message scan | `extension/test-scam-message.html` | Sender, message, link, repeat signals |  |  |  |
+| Universal links | `extension/test-universal-links.html` | Summary and top risky links |  |  |  |
+| Search annotation | Google search `apple login` | Badges visible and readable |  |  |  |
+| Clipboard Guardian | `extension/test-clipboard-guardian.html` | URL, wallet, OTP, recovery warnings |  |  |  |
+| Visual Clone | `extension/test-visual-clone.html` | High Risk visual clone signals |  |  |  |
+| Attack Explanation | Fake phishing scan | Attack type, avoid guidance, safer action |  |  |  |
+| Report Card | Popup Security Report | Counters update/reset, no sensitive content |  |  |  |
+| Demo Mode | Popup Demo Mode | Demo cards render and are labeled |  |  |  |
+| Offline behavior | Backend stopped | Offline messaging, page does not break |  |  |  |

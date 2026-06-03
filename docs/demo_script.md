@@ -82,7 +82,12 @@ Reload the unpacked extension in `chrome://extensions`.
    - Show claimed brands, visual clone score, branded login form signals, and visual brand cloning attack explanation.
    - Mention that this uses DOM metadata only, not screenshots or image files.
 
-13. Close with architecture.
+13. Show final QA coverage.
+   - Open `http://127.0.0.1:5500/extension/test-regression-dashboard.html`.
+   - Explain that the dashboard links to all local feature fixtures and safe/risky regression URLs.
+   - Mention `docs/testing_checklist.md`, `docs/qa_commands.md`, and `backend/tests/regression_api_tests.py`.
+
+14. Close with architecture.
    - “The extension talks to FastAPI, FastAPI runs a multi-layer local scoring pipeline, and the UI renders warnings, banners, badges, and explanations.”
 
 ## Closing Line
