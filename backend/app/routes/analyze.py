@@ -13,6 +13,8 @@ from app.models.schemas import (
     DeepSignalSummary,
     ReputationSummary,
     ThreatIntelSummary,
+    VisualCloneSignalSummary,
+    VisualCloneSummary,
 )
 from app.services.attack_explanation_service import build_attack_explanation
 from app.services.deep_analysis_service import analyze_url_deep
@@ -27,6 +29,7 @@ from app.services.sender_identity_analyzer import analyze_sender_identity
 from app.services.reputation_service import ReputationResult, analyze_url_reputation
 from app.services.threat_intel_service import get_threat_intel_summary
 from app.services.url_feature_extractor import extract_url_features
+from app.services.visual_clone_analyzer import analyze_visual_clone
 
 
 router = APIRouter()
@@ -64,6 +67,11 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
         page_title=payload.page_title,
         visible_text=payload.visible_text,
     )
+    visual_clone_analysis = analyze_visual_clone(
+        page_url=url,
+        visual_metadata=payload.visual_metadata,
+        forms=payload.forms,
+    )
 
     if url_features.is_local_development:
         local_development_reason = (
@@ -83,10 +91,12 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
             has_password_form=form_analysis.has_password_form,
             has_suspicious_content=content_analysis.has_account_verification_language,
         )
+        combined_points = _apply_visual_clone_score(combined_points, visual_clone_analysis)
         reasons = (
             [local_development_reason]
             + content_analysis.reasons
             + form_analysis.reasons
+            + [signal.message for signal in visual_clone_analysis.signals]
         )
 
         if not content_analysis.reasons and not form_analysis.reasons:
@@ -96,6 +106,7 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
             url_signals=[],
             content_signals=content_analysis.reasons,
             form_signals=form_analysis.reasons,
+            visual_clone_signals=[signal.message for signal in visual_clone_analysis.signals],
         )
         attack_explanation = build_attack_explanation(
             reasons=reasons,
@@ -103,6 +114,7 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
             signals=signals.dict(),
             threat_intel=url_pipeline["threat_intel"].dict(),
             deep_analysis=url_pipeline["deep_analysis"].dict(),
+            visual_clone=_visual_clone_summary(visual_clone_analysis).dict(),
         )
 
         return AnalyzePageResponse(
@@ -113,11 +125,12 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
             reasons=reasons,
             signals=signals,
             confidence="high" if combined_points >= 60 else "medium",
-            trust_signals=[],
+            trust_signals=_dedupe_strings(visual_clone_analysis.trust_signals),
             reputation=_reputation_summary(url_pipeline["raw_reputation"]),
             threat_intel=url_pipeline["threat_intel"],
             deep_analysis=url_pipeline["deep_analysis"],
             attack_explanation=attack_explanation,
+            visual_clone=_visual_clone_summary(visual_clone_analysis),
         )
 
     form_analysis = analyze_forms(
@@ -142,6 +155,7 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
         has_suspicious_content=content_analysis.has_account_verification_language,
     )
     combined_points = max(combined_points, url_pipeline["points"])
+    combined_points = _apply_visual_clone_score(combined_points, visual_clone_analysis)
     if url_features.uses_http and content_analysis.has_account_verification_language:
         combined_points = max(combined_points, 45)
     if url_features.uses_http and form_analysis.has_password_form:
@@ -153,7 +167,8 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
     if trusted_context and form_analysis.risk_score == 0 and effective_content_score == 0:
         combined_points = min(combined_points, 5)
 
-    reasons = url_pipeline["reasons"] + effective_content_reasons + form_analysis.reasons
+    visual_clone_reasons = [signal.message for signal in visual_clone_analysis.signals]
+    reasons = url_pipeline["reasons"] + effective_content_reasons + form_analysis.reasons + visual_clone_reasons
     if not reasons:
         reasons = ["No obvious phishing indicators were found by the MVP checks."]
 
@@ -161,6 +176,7 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
         url_signals=url_pipeline["reasons"],
         content_signals=effective_content_reasons,
         form_signals=form_analysis.reasons,
+        visual_clone_signals=visual_clone_reasons,
     )
     risk_level = _risk_level_from_points(combined_points)
     attack_explanation = build_attack_explanation(
@@ -169,6 +185,7 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
         signals=signals.dict(),
         threat_intel=url_pipeline["threat_intel"].dict(),
         deep_analysis=url_pipeline["deep_analysis"].dict(),
+        visual_clone=_visual_clone_summary(visual_clone_analysis).dict(),
     )
 
     return AnalyzePageResponse(
@@ -179,11 +196,12 @@ def analyze_page(payload: AnalyzePageRequest) -> AnalyzePageResponse:
         reasons=reasons,
         signals=signals,
         confidence=url_pipeline["confidence"],
-        trust_signals=url_pipeline["trust_signals"],
+        trust_signals=_dedupe_strings(url_pipeline["trust_signals"] + visual_clone_analysis.trust_signals),
         reputation=url_pipeline["reputation"],
         threat_intel=url_pipeline["threat_intel"],
         deep_analysis=url_pipeline["deep_analysis"],
         attack_explanation=attack_explanation,
+        visual_clone=_visual_clone_summary(visual_clone_analysis),
     )
 
 
@@ -426,6 +444,33 @@ def _deep_analysis_summary(deep_analysis) -> DeepAnalysisSummary:
     )
 
 
+def _visual_clone_summary(visual_clone_analysis) -> VisualCloneSummary:
+    return VisualCloneSummary(
+        is_visual_clone_suspected=visual_clone_analysis.is_visual_clone_suspected,
+        visual_clone_score=visual_clone_analysis.visual_clone_score,
+        visual_clone_confidence=visual_clone_analysis.visual_clone_confidence,
+        primary_clone_brand=visual_clone_analysis.primary_clone_brand or None,
+        claimed_brands=visual_clone_analysis.claimed_brands,
+        signals=[
+            VisualCloneSignalSummary(
+                type=signal.type,
+                severity=signal.severity,
+                brand=signal.brand,
+                message=signal.message,
+            )
+            for signal in visual_clone_analysis.signals
+        ],
+    )
+
+
+def _apply_visual_clone_score(points: int, visual_clone_analysis) -> int:
+    if visual_clone_analysis.visual_clone_confidence == "high":
+        return max(points, 85)
+    if visual_clone_analysis.visual_clone_confidence == "medium":
+        return max(points, 45)
+    return points
+
+
 def _confidence_for_url(points: int, reputation: ReputationResult, known_bad: bool) -> str:
     if known_bad or points >= 70 or reputation.is_official_brand_domain or reputation.is_high_reputation_domain:
         return "high"
@@ -448,6 +493,17 @@ def _remove_safe_reasons(reasons: list[str]) -> list[str]:
         for reason in reasons
         if not reason.startswith("No obvious phishing indicators")
     ]
+
+
+def _dedupe_strings(values: list[str]) -> list[str]:
+    seen = set()
+    deduped = []
+    for value in values:
+        if value in seen:
+            continue
+        seen.add(value)
+        deduped.append(value)
+    return deduped
 
 
 def _combine_url_content_and_form_scores(

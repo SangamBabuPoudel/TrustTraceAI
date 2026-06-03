@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Optional
 from urllib.parse import urlparse
 
-from app.services.reputation_service import analyze_url_reputation, is_official_for_brand
+from app.services.reputation_service import analyze_url_reputation
 
 
 SUSPICIOUS_KEYWORDS = {
@@ -117,10 +117,10 @@ def extract_url_features(url: str) -> UrlFeatures:
     suspicious_keywords = sorted(
         keyword for keyword in SUSPICIOUS_KEYWORDS if keyword in normalized_url
     )
-    brand_impersonation_keywords = sorted(
-        keyword
-        for keyword in BRAND_IMPERSONATION_KEYWORDS
-        if keyword in normalized_url and not is_official_for_brand(normalized_hostname, keyword)
+    brand_impersonation_keywords = (
+        [reputation.matched_brand]
+        if reputation.reputation_warnings and reputation.matched_brand in BRAND_IMPERSONATION_KEYWORDS
+        else []
     )
 
     hostname_parts = [part for part in hostname.split(".") if part]

@@ -2,6 +2,7 @@ const TRUSTTRACE_STATS_KEY = "trusttraceSecurityStats";
 
 const TRUSTTRACE_DEFAULT_ATTACK_TYPES = {
   "Credential phishing": 0,
+  "Visual brand cloning / fake login page": 0,
   "Brand impersonation phishing": 0,
   "Typosquatting / lookalike domain": 0,
   "Suspicious link redirection": 0,
@@ -25,6 +26,9 @@ const TRUSTTRACE_DEFAULT_STATS = {
   clipboard_high_risk_findings: 0,
   clipboard_url_scans: 0,
   clipboard_mismatch_warnings: 0,
+  visual_clone_warnings: 0,
+  high_confidence_visual_clones: 0,
+  branded_login_clone_detections: 0,
   attack_type_counts: TRUSTTRACE_DEFAULT_ATTACK_TYPES,
   last_updated: ""
 };
@@ -77,6 +81,7 @@ async function recordScanResult(result, scanType) {
     if (hasFakeLoginSignal(result)) {
       stats.fake_login_forms_detected += 1;
     }
+    incrementVisualCloneCounters(stats, result);
   });
 }
 
@@ -162,6 +167,26 @@ function hasFakeLoginSignal(result) {
   return formSignals.some((signal) => (
     /password|credential|login form|account-verification|unencrypted http/i.test(signal)
   ));
+}
+
+function incrementVisualCloneCounters(stats, result) {
+  const visualClone = result?.visual_clone;
+  if (!visualClone || Number(visualClone.visual_clone_score || 0) < 40) {
+    return;
+  }
+
+  stats.visual_clone_warnings += 1;
+  if (visualClone.visual_clone_confidence === "high" || visualClone.is_visual_clone_suspected) {
+    stats.high_confidence_visual_clones += 1;
+  }
+
+  const visualSignals = result?.signals?.visual_clone_signals || [];
+  const hasBrandedLoginClone = visualSignals.some((signal) => (
+    /branded login form|password field|login layout/i.test(signal)
+  ));
+  if (hasBrandedLoginClone) {
+    stats.branded_login_clone_detections += 1;
+  }
 }
 
 globalThis.TrustTraceSecurityStats = {

@@ -33,6 +33,11 @@ const reasonsElement = document.getElementById("reasons");
 const repeatNoteElement = document.getElementById("repeat-note");
 const attackExplanationElement = document.getElementById("attack-explanation");
 const attackBodyElement = document.getElementById("attack-body");
+const visualClonePanelElement = document.getElementById("visual-clone-panel");
+const visualCloneScoreElement = document.getElementById("visual-clone-score");
+const visualCloneConfidenceElement = document.getElementById("visual-clone-confidence");
+const visualCloneBrandElement = document.getElementById("visual-clone-brand");
+const visualCloneSignalsElement = document.getElementById("visual-clone-signals");
 const rescanButton = document.getElementById("rescan");
 const copyUrlButton = document.getElementById("copy-url");
 const copyReportButton = document.getElementById("copy-report");
@@ -71,6 +76,7 @@ async function collectPageContent(tab) {
       visible_text: "",
       forms: [],
       links: [],
+      visual_metadata: getEmptyVisualMetadata(),
       message_candidates: []
     };
   }
@@ -102,6 +108,7 @@ async function collectPageContentWithScripting(tab) {
       visible_text: "",
       forms: [],
       links: [],
+      visual_metadata: getEmptyVisualMetadata(),
       message_candidates: []
     };
   }
@@ -114,8 +121,28 @@ function normalizePageContent(pageContent, tab) {
     visible_text: (pageContent?.visibleText || "").slice(0, MAX_VISIBLE_TEXT_LENGTH),
     forms: pageContent?.forms || [],
     links: pageContent?.links || [],
+    visual_metadata: pageContent?.visualMetadata || getEmptyVisualMetadata(),
     clipboard_signals: pageContent?.clipboardSignals || [],
     message_candidates: pageContent?.messageCandidates || []
+  };
+}
+
+function getEmptyVisualMetadata() {
+  return {
+    document_title: "",
+    primary_headings: [],
+    favicons: [],
+    images: [],
+    logo_candidates: [],
+    button_texts: [],
+    input_labels: [],
+    brand_like_text: [],
+    color_hints: [],
+    layout_hints: {
+      has_centered_login_card: false,
+      has_fullscreen_login_layout: false,
+      has_minimal_login_page: false
+    }
   };
 }
 
@@ -291,12 +318,118 @@ function collectTrustTracePageSnapshot(maxVisibleTextLength, clipboardGuardianEn
       .slice(0, 8);
   }
 
+  function cleanText(value) {
+    return String(value || "").replace(/\s+/g, " ").trim();
+  }
+
+  function cssEscapeFallback(value) {
+    if (window.CSS?.escape) {
+      return window.CSS.escape(value);
+    }
+    return String(value).replace(/["\\]/g, "\\$&");
+  }
+
+  function getNearbyText(element, maxLength) {
+    const container = element.closest("header, main, section, article, form, div") || element.parentElement || element;
+    return cleanText(container.innerText || container.textContent || "").slice(0, maxLength);
+  }
+
+  function collectVisualMetadata() {
+    const brandTerms = [
+      "apple", "apple id", "icloud", "google", "gmail", "youtube", "openai", "chatgpt",
+      "claude", "anthropic", "microsoft", "outlook", "office", "paypal", "amazon",
+      "netflix", "facebook", "instagram", "github", "chase", "bank of america",
+      "wells fargo", "dhl", "fedex", "usps"
+    ];
+    const images = Array.from(document.images || [])
+      .filter((image) => {
+        const rect = image.getBoundingClientRect();
+        const style = window.getComputedStyle(image);
+        return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+      })
+      .slice(0, 30)
+      .map((image) => {
+        const rect = image.getBoundingClientRect();
+        return {
+          src: image.currentSrc || image.src || image.getAttribute("src") || "",
+          alt: image.getAttribute("alt") || "",
+          title: image.getAttribute("title") || "",
+          class_name: image.className ? String(image.className) : "",
+          id: image.id || "",
+          width: Math.round(rect.width || image.naturalWidth || image.width || 0),
+          height: Math.round(rect.height || image.naturalHeight || image.height || 0),
+          nearby_text: getNearbyText(image, 150)
+        };
+      });
+    const logoCandidates = images.filter((image) => {
+      const combined = `${image.src} ${image.alt} ${image.title} ${image.class_name} ${image.id} ${image.nearby_text}`.toLowerCase();
+      return combined.includes("logo") || brandTerms.some((term) => combined.includes(term));
+    }).slice(0, 10);
+    const visibleInputs = Array.from(document.querySelectorAll("input")).filter((input) => {
+      const rect = input.getBoundingClientRect();
+      const style = window.getComputedStyle(input);
+      return rect.width > 0 && rect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+    });
+    const passwordInput = visibleInputs.find((input) => input.type === "password");
+    const emailInput = visibleInputs.find(isEmailOrUsernameInput);
+    const loginContainer = passwordInput?.closest("form, main, section, article, div") || null;
+    const rect = loginContainer?.getBoundingClientRect?.();
+    const bodyText = cleanText(document.body?.innerText || "");
+    const pageText = cleanText(`${document.title || ""} ${bodyText.slice(0, 2500)}`);
+
+    return {
+      document_title: document.title || "",
+      primary_headings: Array.from(document.querySelectorAll("h1, h2, h3"))
+        .filter((heading) => {
+          const headingRect = heading.getBoundingClientRect();
+          const style = window.getComputedStyle(heading);
+          return headingRect.width > 0 && headingRect.height > 0 && style.visibility !== "hidden" && style.display !== "none";
+        })
+        .map((heading) => cleanText(heading.innerText || heading.textContent || ""))
+        .filter(Boolean)
+        .slice(0, 20),
+      favicons: Array.from(document.querySelectorAll("link[rel*='icon' i], link[rel='apple-touch-icon' i]"))
+        .slice(0, 10)
+        .map((link) => ({
+          href: link.href || link.getAttribute("href") || "",
+          type: link.getAttribute("type") || "",
+          rel: link.getAttribute("rel") || ""
+        })),
+      images,
+      logo_candidates: logoCandidates,
+      button_texts: Array.from(document.querySelectorAll("button, input[type='submit'], input[type='button'], a[role='button']"))
+        .map((button) => cleanText(button.innerText || button.value || button.getAttribute("aria-label") || ""))
+        .filter(Boolean)
+        .slice(0, 40),
+      input_labels: visibleInputs.map((input) => {
+        const explicitLabel = input.id ? document.querySelector(`label[for="${cssEscapeFallback(input.id)}"]`) : null;
+        const wrapperLabel = input.closest("label");
+        return cleanText([
+          explicitLabel?.innerText || "",
+          wrapperLabel?.innerText || "",
+          input.getAttribute("placeholder") || "",
+          input.getAttribute("aria-label") || "",
+          input.getAttribute("name") || "",
+          input.id || ""
+        ].join(" "));
+      }).filter(Boolean).slice(0, 40),
+      brand_like_text: brandTerms.filter((term) => pageText.toLowerCase().includes(term)).slice(0, 20),
+      color_hints: [],
+      layout_hints: {
+        has_centered_login_card: Boolean(rect && passwordInput && rect.width > 220 && rect.width < Math.min(window.innerWidth, 620) && Math.abs((rect.left + rect.width / 2) - (window.innerWidth / 2)) < window.innerWidth * 0.22),
+        has_fullscreen_login_layout: Boolean(passwordInput && emailInput && bodyText.length < 4000),
+        has_minimal_login_page: Boolean(passwordInput && visibleInputs.length <= 8 && bodyText.length < 2200)
+      }
+    };
+  }
+
   return {
     pageTitle: document.title || "",
     selectedText: getSelectedText().slice(0, maxVisibleTextLength),
     visibleText: getVisibleBodyText().slice(0, maxVisibleTextLength),
     forms: collectFormMetadata(),
     links: collectVisibleLinks(),
+    visualMetadata: collectVisualMetadata(),
     clipboardSignals: clipboardGuardianEnabledForSnapshot ? detectClipboardSignalsFallback() : [],
     messageCandidates: collectMessageCandidates()
   };
@@ -370,6 +503,7 @@ function showLoading() {
   resultElement.hidden = true;
   repeatNoteElement.hidden = true;
   attackExplanationElement.hidden = true;
+  visualClonePanelElement.hidden = true;
   messagePreviewElement.hidden = true;
   nearbyThreatsElement.hidden = true;
   loadingStateElement.hidden = false;
@@ -382,6 +516,7 @@ function showError(title, message, backendStatus = "offline") {
   resultElement.hidden = true;
   repeatNoteElement.hidden = true;
   attackExplanationElement.hidden = true;
+  visualClonePanelElement.hidden = true;
   messagePreviewElement.hidden = true;
   nearbyThreatsElement.hidden = true;
   errorStateElement.hidden = false;
@@ -523,6 +658,7 @@ function getSignalGroups(result) {
     { title: "Deep URL Signals", reasons: deepSignals },
     { title: "URL signals", reasons: signals.url_signals || [] },
     { title: "Clipboard Signals", reasons: signals.clipboard_signals || [] },
+    { title: "Visual Clone Signals", reasons: signals.visual_clone_signals || [] },
     { title: "Page content signals", reasons: signals.content_signals || [] },
     { title: "Form signals", reasons: signals.form_signals || [] }
   ];
@@ -540,6 +676,7 @@ function renderResult(result) {
   resultElement.hidden = false;
   renderRepeatNote(result);
   renderAttackExplanation(result.attack_explanation);
+  renderVisualClone(result.visual_clone);
   copyReportButton.disabled = false;
 
   riskLevelElement.textContent = getRiskLabel(riskLevel);
@@ -556,6 +693,30 @@ function renderResult(result) {
 
   animateTrustScore(trustScore, riskLevel);
   renderReasons(result, riskLevel);
+}
+
+function renderVisualClone(visualClone) {
+  const score = Number(visualClone?.visual_clone_score || 0);
+  const signals = visualClone?.signals || [];
+  const shouldShow = score >= 40 || signals.length > 0 || Boolean(visualClone?.is_visual_clone_suspected);
+
+  if (!shouldShow) {
+    visualClonePanelElement.hidden = true;
+    return;
+  }
+
+  const confidence = capitalize(visualClone.visual_clone_confidence || "low");
+  const brand = visualClone.primary_clone_brand || (visualClone.claimed_brands || [])[0] || "Unknown";
+
+  visualClonePanelElement.hidden = false;
+  visualClonePanelElement.className = `visual-clone-panel ${visualClone.visual_clone_confidence || "low"}`;
+  visualCloneScoreElement.textContent = `${score}/100`;
+  visualCloneConfidenceElement.textContent = `Confidence: ${confidence}`;
+  visualCloneBrandElement.textContent = `Claimed brand: ${capitalize(String(brand))}`;
+  visualCloneSignalsElement.innerHTML = signals
+    .slice(0, 4)
+    .map((signal) => `<span>${escapeHtml(signal.message || "Visual clone signal detected.")}</span>`)
+    .join("");
 }
 
 function renderAttackExplanation(explanation) {
@@ -626,7 +787,8 @@ async function scanCurrentUrl() {
       url: currentTabUrl,
       page_title: pageContent.page_title,
       visible_text: pageContent.visible_text,
-      forms: pageContent.forms
+      forms: pageContent.forms,
+      visual_metadata: pageContent.visual_metadata
     });
     applyClipboardSignalsToPageResult(result, pageContent.clipboard_signals);
     latestScanType = "website";
@@ -991,6 +1153,7 @@ async function renderSecurityReport() {
     + Number(stats.high_risk_links_detected || 0)
     + Number(stats.suspicious_messages_detected || 0)
     + Number(stats.fake_login_forms_detected || 0)
+    + Number(stats.visual_clone_warnings || 0)
   );
 
   const reportItems = [
@@ -1000,6 +1163,9 @@ async function renderSecurityReport() {
     ["Suspicious messages", stats.suspicious_messages_detected],
     ["High-risk links", stats.high_risk_links_detected],
     ["Fake login forms", stats.fake_login_forms_detected],
+    ["Visual clone warnings", stats.visual_clone_warnings],
+    ["High-confidence clones", stats.high_confidence_visual_clones],
+    ["Branded login clones", stats.branded_login_clone_detections],
     ["Repeated scams", stats.repeated_message_warnings],
     ["Clipboard scans", stats.clipboard_scans],
     ["Clipboard warnings", stats.clipboard_warnings],
@@ -1333,6 +1499,9 @@ function buildReport() {
   const repeatSignals = latestResult?.signals?.repeat_signals?.length
     ? latestResult.signals.repeat_signals.join("\n- ")
     : "None";
+  const visualCloneSignals = latestResult?.signals?.visual_clone_signals?.length
+    ? latestResult.signals.visual_clone_signals.join("\n- ")
+    : "None";
   const trustSignals = latestResult?.trust_signals?.length
     ? latestResult.trust_signals.join("\n- ")
     : "None";
@@ -1362,6 +1531,8 @@ Attack Summary: ${attackExplanation?.summary || "N/A"}
 What To Avoid:
 - ${attackAvoid}
 Safer Action: ${attackExplanation?.safer_action || "N/A"}
+Visual Clone Score: ${latestResult?.visual_clone?.visual_clone_score ?? "N/A"}
+Visual Clone Confidence: ${latestResult?.visual_clone?.visual_clone_confidence || "N/A"}
 Reasons:
 - ${reasons}
 Trust Signals:
@@ -1370,6 +1541,8 @@ Threat Intelligence:
 - ${threatIntelSignals}
 Deep URL Signals:
 - ${deepUrlSignals}
+Visual Clone Signals:
+- ${visualCloneSignals}
 URL Signals:
 - ${urlSignals}
 Page Content Signals:

@@ -32,6 +32,21 @@ ATTACK_TEMPLATES = {
         ],
         "safer_action": "Go directly to the official website by typing the address yourself or using a trusted bookmark.",
     },
+    "Visual brand cloning / fake login page": {
+        "attack_category": "Visual impersonation",
+        "summary": "This page appears to copy the visual identity of a trusted service while being hosted on a non-official domain.",
+        "how_it_works": [
+            "The attacker uses brand names, logo-like metadata, familiar headings, or login layout to make the page look legitimate.",
+            "The page may ask for passwords, security codes, payment details, or account recovery information.",
+            "Users may believe they are interacting with the real brand even though the domain is different.",
+        ],
+        "what_to_avoid": [
+            "Do not enter passwords, OTPs, recovery codes, payment details, or personal information.",
+            "Do not trust logos alone.",
+            "Check the domain carefully before signing in.",
+        ],
+        "safer_action": "Go directly to the official website by typing the address or using a trusted bookmark.",
+    },
     "Brand impersonation phishing": {
         "attack_category": "Brand impersonation",
         "summary": "This appears to impersonate a trusted brand.",
@@ -152,6 +167,7 @@ ATTACK_TEMPLATES = {
 
 PRIORITY = [
     "Known-bad URL / malware",
+    "Visual brand cloning / fake login page",
     "Credential phishing",
     "Brand impersonation phishing",
     "Typosquatting / lookalike domain",
@@ -170,12 +186,13 @@ def build_attack_explanation(
     signals: Optional[dict] = None,
     threat_intel: Optional[dict] = None,
     deep_analysis: Optional[dict] = None,
+    visual_clone: Optional[dict] = None,
     repeat_count: int = 1,
     repeat_warning: Optional[str] = None,
 ) -> dict:
     signals = signals or {}
-    evidence = _collect_evidence(reasons, signals, threat_intel, deep_analysis, repeat_warning)
-    detected = _detect_attack_types(evidence=evidence, threat_intel=threat_intel, repeat_count=repeat_count)
+    evidence = _collect_evidence(reasons, signals, threat_intel, deep_analysis, visual_clone, repeat_warning)
+    detected = _detect_attack_types(evidence=evidence, threat_intel=threat_intel, visual_clone=visual_clone, repeat_count=repeat_count)
     primary = _choose_primary(detected)
     template = ATTACK_TEMPLATES[primary]
 
@@ -196,6 +213,7 @@ def _collect_evidence(
     signals: dict,
     threat_intel: Optional[dict],
     deep_analysis: Optional[dict],
+    visual_clone: Optional[dict],
     repeat_warning: Optional[str],
 ) -> str:
     parts = list(reasons)
@@ -210,15 +228,29 @@ def _collect_evidence(
                 parts.extend(str(value) for value in signal.values())
             else:
                 parts.append(str(signal))
+    if visual_clone:
+        parts.extend(str(value) for value in visual_clone.values() if not isinstance(value, list))
+        for signal in visual_clone.get("signals", []):
+            if isinstance(signal, dict):
+                parts.extend(str(value) for value in signal.values())
+            else:
+                parts.append(str(signal))
     if repeat_warning:
         parts.append(repeat_warning)
     return " ".join(parts).lower()
 
 
-def _detect_attack_types(evidence: str, threat_intel: Optional[dict], repeat_count: int) -> list[str]:
+def _detect_attack_types(evidence: str, threat_intel: Optional[dict], visual_clone: Optional[dict], repeat_count: int) -> list[str]:
     detected = []
     if threat_intel and threat_intel.get("is_known_bad"):
         detected.append("Known-bad URL / malware")
+    if visual_clone and (
+        visual_clone.get("is_visual_clone_suspected")
+        or visual_clone.get("visual_clone_confidence") == "high"
+        or "brand_domain_mismatch" in evidence
+        or "branded_login_form" in evidence
+    ):
+        detected.append("Visual brand cloning / fake login page")
     if _has_any(evidence, ["password", "credential", "security code", "one-time code", "otp", "login", "verify", "confirm identity", "password field"]):
         detected.append("Credential phishing")
     if _has_any(evidence, ["brand keyword appears outside", "impersonat", "official domain", "sender domain does not match", "personal/free email provider", "displayed link text mentions"]):

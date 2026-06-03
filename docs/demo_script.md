@@ -66,7 +66,13 @@ Reload the unpacked extension in `chrome://extensions`.
    - Copy the suspicious URL and click Scan Clipboard Now.
    - Show that raw clipboard text is not stored and non-URL content is analyzed locally.
 
-10. Close with architecture.
+10. Show Visual Clone Intelligence.
+   - Open `http://127.0.0.1:5500/extension/test-visual-clone.html`.
+   - Scan the page from the popup.
+   - Show claimed brands, visual clone score, branded login form signals, and visual brand cloning attack explanation.
+   - Mention that this uses DOM metadata only, not screenshots or image files.
+
+11. Close with architecture.
    - “The extension talks to FastAPI, FastAPI runs a multi-layer local scoring pipeline, and the UI renders warnings, banners, badges, and explanations.”
 
 ## Closing Line

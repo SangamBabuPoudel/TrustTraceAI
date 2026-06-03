@@ -73,7 +73,7 @@ Example response:
 
 ## `POST /api/analyze-page`
 
-Analyzes the current URL, visible page text, and form metadata. Used by the popup website scan.
+Analyzes the current URL, visible page text, form metadata, and optional visual metadata. Used by the popup website scan.
 
 Request:
 
@@ -92,7 +92,40 @@ Request:
       "hidden_input_count": 0,
       "submit_text": "Verify Account"
     }
-  ]
+  ],
+  "visual_metadata": {
+    "document_title": "Security Alert",
+    "primary_headings": ["Apple ID"],
+    "favicons": [
+      {
+        "href": "https://example.com/apple-logo-favicon.ico",
+        "type": "image/x-icon",
+        "rel": "icon"
+      }
+    ],
+    "images": [
+      {
+        "src": "https://example.com/apple-logo.png",
+        "alt": "Apple logo",
+        "title": "Apple logo",
+        "class_name": "brand-logo",
+        "id": "",
+        "width": 62,
+        "height": 62,
+        "nearby_text": "Apple ID account locked security verification required"
+      }
+    ],
+    "logo_candidates": [],
+    "button_texts": ["Verify Apple ID"],
+    "input_labels": ["Email or Apple ID", "Password"],
+    "brand_like_text": ["apple", "apple id"],
+    "color_hints": [],
+    "layout_hints": {
+      "has_centered_login_card": true,
+      "has_fullscreen_login_layout": true,
+      "has_minimal_login_page": true
+    }
+  }
 }
 ```
 
@@ -112,11 +145,29 @@ Example response fields:
   "signals": {
     "url_signals": [],
     "content_signals": [],
-    "form_signals": []
+    "form_signals": [],
+    "visual_clone_signals": [
+      "Page claims to represent Apple, but the domain is not an official Apple domain."
+    ]
+  },
+  "visual_clone": {
+    "is_visual_clone_suspected": true,
+    "visual_clone_score": 100,
+    "visual_clone_confidence": "high",
+    "primary_clone_brand": "apple",
+    "claimed_brands": ["apple"],
+    "signals": [
+      {
+        "type": "brand_domain_mismatch",
+        "severity": "high",
+        "brand": "Apple",
+        "message": "Page claims to represent Apple, but the domain is not an official Apple domain."
+      }
+    ]
   },
   "attack_explanation": {
-    "attack_type": "Credential phishing",
-    "summary": "This may be trying to collect login credentials or security codes.",
+    "attack_type": "Visual brand cloning / fake login page",
+    "summary": "This page appears to copy the visual identity of a trusted service while being hosted on a non-official domain.",
     "what_to_avoid": [
       "Do not enter passwords or security codes."
     ],
@@ -192,6 +243,7 @@ Example response fields:
 | `threat_intel` | Local blocklist result and future threat-intel placeholder output. |
 | `deep_analysis` | Structured deep URL heuristic signals. |
 | `attack_explanation` | Attack type, summary, what to avoid, and safer action. |
+| `visual_clone` | Metadata-based visual brand clone result for page scans. |
 
 ## Scoring Notes
 
@@ -199,5 +251,51 @@ Example response fields:
 - HTTP plus login/password/payment context is more serious.
 - HTTP plus a password form is high risk.
 - Official trusted HTTPS domains suppress weak false-positive signals.
+- Brand visual claims on official trusted domains do not create visual clone warnings.
+- Trusted commerce/retailer domains can mention brands in product or marketplace context without being treated as brand impersonation.
+- Brand impersonation requires suspicious identity/login/security context, suspicious domain patterns, credential language, or low-reputation context.
+- Visual Clone Intelligence uses DOM metadata only; it does not collect screenshots or image binaries.
 - Local known-bad blocklist matches are high risk.
 - External APIs and ML are not active in this MVP.
+
+## Regression Examples
+
+Trusted retailer product context:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/analyze-url \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://www.verizon.com/shop/online/free-cell-phones/apple/"}'
+```
+
+Expected: low risk, high trust score, no Apple impersonation warning. A trust signal may say Apple appears in product listing context.
+
+Fake Apple login/security domain:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/analyze-url \
+  -H "Content-Type: application/json" \
+  -d '{"url":"http://apple-login-security.example.com/verify"}'
+```
+
+Expected: high risk.
+
+Official Apple support page:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/analyze-url \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://support.apple.com"}'
+```
+
+Expected: low risk with official Apple trust signal.
+
+Trusted commerce search page:
+
+```bash
+curl -X POST http://127.0.0.1:8000/api/analyze-url \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://www.bestbuy.com/site/searchpage.jsp?st=apple+iphone"}'
+```
+
+Expected: low or low-medium risk, no Apple impersonation warning.

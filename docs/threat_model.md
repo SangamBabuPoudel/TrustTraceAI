@@ -8,6 +8,7 @@ TrustTrace AI focuses on common browser-based phishing and scam risks.
 |---|---|
 | Phishing URLs | URL scoring, local blocklist, domain heuristics, warning page. |
 | Brand impersonation | Official domain verification and brand-outside-domain checks. |
+| Visual brand cloning | Metadata-only visual brand claim checks, logo/favicons hints, branded login layout detection, and official-domain mismatch checks. |
 | Fake login forms | Password/email fields, suspicious submit text, form action checks. |
 | Suspicious email/message links | User-controlled message scan and link mismatch analysis. |
 | Sender impersonation | Free-email provider and claimed-brand/domain mismatch checks. |
@@ -42,6 +43,7 @@ This is rule-based explainability, not an external AI model.
 
 - TrustTrace AI does not inspect downloads, files, or network traffic.
 - It does not scan QR codes or screenshots yet.
+- It does not collect image binaries or run screenshot-based visual similarity yet.
 - It does not use real-time external threat intelligence yet.
 - It does not use a trained ML phishing classifier yet.
 - Search engine page layouts can change and may require annotation maintenance.

@@ -100,11 +100,27 @@ h2 {
   font-size: 16px;
 }
 
-.attack-section {
+.attack-section,
+.visual-clone-warning {
   padding: 16px;
   border: 1px solid rgba(248, 113, 113, 0.28);
   border-radius: 14px;
   background: rgba(127, 29, 29, 0.2);
+}
+
+.visual-clone-warning {
+  border-color: rgba(251, 113, 133, 0.42);
+}
+
+.visual-clone-warning strong {
+  display: block;
+  color: #fff;
+  font-size: 20px;
+}
+
+.visual-clone-warning p {
+  margin: 8px 0 0;
+  color: #fee2e2;
 }
 
 .attack-warning-grid {

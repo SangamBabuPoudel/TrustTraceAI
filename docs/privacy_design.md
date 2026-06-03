@@ -18,6 +18,7 @@ TrustTrace AI is designed around minimal collection, local analysis, and user-co
 | URL scan | Current URL. |
 | Pre-visit warning | Destination URL only. |
 | Page scan | URL, visible text, page title, form metadata. |
+| Visual Clone Intelligence | DOM metadata such as title, headings, favicon/logo URLs, image alt/title/src metadata, button text, input labels, brand-like text, and layout hints. |
 | Link scan | Visible link URLs, link text, hostname, lightweight surrounding context. |
 | Search annotation | Visible result URLs only. |
 | Message scan | Selected or visible message text, optional sender input, visible links. |
@@ -36,6 +37,7 @@ TrustTrace AI is designed around minimal collection, local analysis, and user-co
 - Full URL paths for report-card metrics.
 - Search query text for annotation.
 - Raw clipboard text or clipboard history.
+- Screenshots, image binaries, canvas pixels, or visual recordings.
 - API keys in frontend code.
 
 ## Repeated Message Storage
@@ -81,6 +83,15 @@ It does not store full message text, passwords, cookies, form values, personal a
 - Non-URL clipboard text is analyzed locally and is not sent to the backend.
 - Clipboard URLs may be sent to `/api/analyze-url` only after the user clicks Scan Clipboard Now.
 - The feature detects suspicious URLs, OTP/security codes, wallet addresses, recovery phrases, private keys, credential-like text, and copy-value mismatches.
+
+## Visual Clone Intelligence
+
+- Visual Clone Intelligence is metadata-only.
+- It uses DOM-visible brand claims and layout clues to detect fake branded login pages.
+- It collects image URLs and alt/title/class/id metadata, but not image files or pixels.
+- It does not take screenshots.
+- It does not run screenshot similarity or computer-vision ML in the MVP.
+- Official brand domains are checked before clone warnings are applied to reduce false positives.
 
 ## External Integrations
 

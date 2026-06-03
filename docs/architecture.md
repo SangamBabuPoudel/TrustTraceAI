@@ -20,6 +20,7 @@ Local FastAPI Backend
   |-- Deep URL Analysis Service
   |-- Page Content Analyzer
   |-- Form Analyzer
+  |-- Visual Clone Analyzer
   |-- Message Analyzer
   |-- Sender Identity Analyzer
   |-- Message Fingerprint Service
@@ -37,12 +38,13 @@ Risk Response
   |-- Universal Link Summary
   |-- Security Report Card
   |-- Clipboard Guardian Result
+  |-- Visual Clone Intelligence Panel
 ```
 
 ## Chrome Extension
 
 - `popup.html`, `popup.css`, `popup.js`: interactive dashboard for page scans, message scans, link scans, copy report, and attack explanations.
-- `content.js`: collects visible page text, form metadata, message candidates, visible links, and search result links. It also injects caution banners and search result badges.
+- `content.js`: collects visible page text, form metadata, visual metadata, message candidates, visible links, and search result links. It also injects caution banners and search result badges.
 - `background.js`: MV3 service worker for pre-visit URL checks, high-risk warning redirects, high-risk cache, session bypass, and URL analysis requests from content scripts.
 - `warning.html`, `warning.css`, `warning.js`: high-risk interstitial with risk evidence and attack explanation.
 
@@ -66,12 +68,13 @@ Layer 1: Local known-bad blocklist + future threat intel placeholders
   |
   v
 Layer 2: Official domain and reputation checks
+  |      includes trusted commerce/product context
   |
   v
 Layer 3: URL/domain heuristics
   |
   v
-Layer 4: Page, form, sender, message, and link analysis
+Layer 4: Page, form, visual clone, sender, message, and link analysis
   |
   v
 Layer 5: Attack Explanation Mode
@@ -104,6 +107,16 @@ The attack explanation service uses existing reasons and signals to classify a l
 - How it works
 - What to avoid
 - Safer action
+
+## Visual Clone Intelligence
+
+Visual Clone Intelligence analyzes DOM metadata for brand clone patterns. It uses document title, headings, favicon links, image alt/title/src metadata, logo candidates, button text, input labels, brand-like text, and login layout hints.
+
+The analyzer flags a page when it claims a trusted brand, is not on an official brand domain, and contains login, verification, security, payment, or credential-like behavior. Official trusted domains suppress clone warnings when the visual brand claim matches the domain.
+
+Trusted commerce domains such as Verizon, Best Buy, Amazon, Walmart, Target, Costco, AT&T, and T-Mobile can mention brands in product listings without being treated as fake brand identity pages. Product context is separated from identity/login context before clone scoring is applied.
+
+It does not collect screenshots, image binaries, canvas pixels, or visual recordings. Future work could add screenshot similarity or computer-vision models only after explicit privacy review.
 
 ## Personal Security Report Card
 

@@ -570,6 +570,60 @@ button {
   padding-left: 18px;
 }
 
+.visual-clone-panel {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  border-radius: 14px;
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.visual-clone-panel.high {
+  border-color: rgba(251, 113, 133, 0.38);
+  background: rgba(251, 113, 133, 0.1);
+}
+
+.visual-clone-panel.low {
+  border-color: rgba(45, 212, 191, 0.24);
+  background: rgba(45, 212, 191, 0.07);
+}
+
+.visual-clone-panel .section-topline strong {
+  color: #fef3c7;
+  font-size: 13px;
+}
+
+.visual-clone-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.visual-clone-meta span,
+.visual-clone-signals span {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #dbeafe;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.25;
+  padding: 6px 8px;
+}
+
+.visual-clone-signals {
+  display: grid;
+  gap: 7px;
+}
+
+.visual-clone-signals span {
+  border-radius: 10px;
+  color: var(--muted);
+  font-weight: 700;
+}
+
 .wide-button {
   width: 100%;
   margin-top: 10px;

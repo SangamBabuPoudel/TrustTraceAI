@@ -7,6 +7,33 @@ const MAX_SEARCH_RESULTS_TO_SCAN = 15;
 const DEFAULT_VISIBLE_LINK_LIMIT = 25;
 const PAGE_LINK_SCAN_LIMIT = 30;
 const CLIPBOARD_GUARDIAN_SETTING_KEY = "trusttraceClipboardGuardianEnabled";
+const TRUSTTRACE_BRAND_TERMS = [
+  "apple",
+  "apple id",
+  "icloud",
+  "google",
+  "gmail",
+  "youtube",
+  "openai",
+  "chatgpt",
+  "claude",
+  "anthropic",
+  "microsoft",
+  "outlook",
+  "office",
+  "paypal",
+  "amazon",
+  "netflix",
+  "facebook",
+  "instagram",
+  "github",
+  "chase",
+  "bank of america",
+  "wells fargo",
+  "dhl",
+  "fedex",
+  "usps"
+];
 const searchResultCache = new Map();
 let searchScanTimer = null;
 let clipboardGuardianEnabled = false;
@@ -39,6 +66,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     visibleText: getVisibleBodyText().slice(0, MAX_VISIBLE_TEXT_LENGTH),
     forms: collectFormMetadata(),
     links: collectVisibleLinks(),
+    visualMetadata: collectVisualMetadata(),
     clipboardSignals: clipboardGuardianEnabled
       ? TrustTraceClipboardGuardian.detectSensitiveClipboardPageSignals(document)
       : [],
@@ -108,6 +136,150 @@ function collectVisibleLinks() {
     text: link.text,
     href: link.href
   }));
+}
+
+function collectVisualMetadata() {
+  const images = Array.from(document.images || [])
+    .filter(isVisible)
+    .slice(0, 30)
+    .map((image) => buildImageMetadata(image));
+  const logoCandidates = images
+    .filter((image) => isLogoCandidateMetadata(image))
+    .slice(0, 10);
+
+  return {
+    document_title: document.title || "",
+    primary_headings: Array.from(document.querySelectorAll("h1, h2, h3"))
+      .filter(isVisible)
+      .map((heading) => cleanText(heading.innerText || heading.textContent || ""))
+      .filter(Boolean)
+      .slice(0, 20),
+    favicons: collectFaviconMetadata(),
+    images,
+    logo_candidates: logoCandidates,
+    button_texts: collectButtonTexts(),
+    input_labels: collectInputLabels(),
+    brand_like_text: collectBrandLikeText(),
+    color_hints: collectColorHints(),
+    layout_hints: collectLayoutHints()
+  };
+}
+
+function collectFaviconMetadata() {
+  return Array.from(document.querySelectorAll("link[rel*='icon' i], link[rel='apple-touch-icon' i]"))
+    .slice(0, 10)
+    .map((link) => ({
+      href: link.href || link.getAttribute("href") || "",
+      type: link.getAttribute("type") || "",
+      rel: link.getAttribute("rel") || ""
+    }));
+}
+
+function buildImageMetadata(image) {
+  const rect = image.getBoundingClientRect();
+  return {
+    src: image.currentSrc || image.src || image.getAttribute("src") || "",
+    alt: image.getAttribute("alt") || "",
+    title: image.getAttribute("title") || "",
+    class_name: image.className ? String(image.className) : "",
+    id: image.id || "",
+    width: Math.round(rect.width || image.naturalWidth || image.width || 0),
+    height: Math.round(rect.height || image.naturalHeight || image.height || 0),
+    nearby_text: getNearbyText(image, 150)
+  };
+}
+
+function isLogoCandidateMetadata(image) {
+  const combined = `${image.src} ${image.alt} ${image.title} ${image.class_name} ${image.id} ${image.nearby_text}`.toLowerCase();
+  const logoLikeSize = image.width >= 24 && image.height >= 24 && image.width <= 260 && image.height <= 180;
+  return (
+    combined.includes("logo") ||
+    TRUSTTRACE_BRAND_TERMS.some((term) => combined.includes(term)) ||
+    (logoLikeSize && image.nearby_text && TRUSTTRACE_BRAND_TERMS.some((term) => image.nearby_text.toLowerCase().includes(term)))
+  );
+}
+
+function collectButtonTexts() {
+  return Array.from(document.querySelectorAll("button, input[type='submit'], input[type='button'], a[role='button']"))
+    .filter(isVisible)
+    .map((button) => cleanText(button.innerText || button.value || button.getAttribute("aria-label") || ""))
+    .filter(Boolean)
+    .slice(0, 40);
+}
+
+function collectInputLabels() {
+  return Array.from(document.querySelectorAll("input, textarea, select"))
+    .filter(isVisible)
+    .map((input) => {
+      const explicitLabel = input.id ? document.querySelector(`label[for="${cssEscape(input.id)}"]`) : null;
+      const wrapperLabel = input.closest("label");
+      return cleanText([
+        explicitLabel?.innerText || "",
+        wrapperLabel?.innerText || "",
+        input.getAttribute("placeholder") || "",
+        input.getAttribute("aria-label") || "",
+        input.getAttribute("name") || "",
+        input.id || ""
+      ].join(" "));
+    })
+    .filter(Boolean)
+    .slice(0, 40);
+}
+
+function collectBrandLikeText() {
+  const pageText = cleanText([
+    document.title || "",
+    Array.from(document.querySelectorAll("h1, h2, h3, [aria-label], [title]"))
+      .filter(isVisible)
+      .map((element) => `${element.innerText || ""} ${element.getAttribute("aria-label") || ""} ${element.getAttribute("title") || ""}`)
+      .join(" "),
+    (document.body?.innerText || "").slice(0, 2500)
+  ].join(" "));
+
+  return TRUSTTRACE_BRAND_TERMS
+    .filter((term) => pageText.toLowerCase().includes(term))
+    .slice(0, 20);
+}
+
+function collectColorHints() {
+  const bodyStyle = window.getComputedStyle(document.body || document.documentElement);
+  return [
+    bodyStyle.backgroundColor || "",
+    bodyStyle.color || ""
+  ].filter(Boolean).slice(0, 4);
+}
+
+function collectLayoutHints() {
+  const passwordInput = document.querySelector("input[type='password']");
+  const emailInput = Array.from(document.querySelectorAll("input")).find(isEmailOrUsernameInput);
+  const forms = Array.from(document.forms).filter(isVisible);
+  const loginContainer = passwordInput?.closest("form, main, section, article, div") || null;
+  const rect = loginContainer?.getBoundingClientRect?.();
+  const viewportCenterX = window.innerWidth / 2;
+  const hasCenteredLoginCard = Boolean(
+    rect &&
+    passwordInput &&
+    rect.width > 220 &&
+    rect.width < Math.min(window.innerWidth, 620) &&
+    Math.abs((rect.left + rect.width / 2) - viewportCenterX) < window.innerWidth * 0.22
+  );
+  const bodyTextLength = cleanText(document.body?.innerText || "").length;
+  const visibleInputs = Array.from(document.querySelectorAll("input")).filter(isVisible);
+
+  return {
+    has_centered_login_card: hasCenteredLoginCard,
+    has_fullscreen_login_layout: Boolean(passwordInput && emailInput && forms.length <= 2 && bodyTextLength < 4000),
+    has_minimal_login_page: Boolean(passwordInput && visibleInputs.length <= 8 && bodyTextLength < 2200)
+  };
+}
+
+function getNearbyText(element, maxLength) {
+  const container = element.closest("header, main, section, article, form, div") || element.parentElement || element;
+  return cleanText(container.innerText || container.textContent || "").slice(0, maxLength);
+}
+
+function cleanText(value) {
+  return String(value || "").replace(/\s+/g, " ").trim();
 }
 
 function collectMessageCandidates() {
@@ -343,7 +515,10 @@ function showCautionBanner(result) {
 
   const reasons = (result?.reasons || []).slice(0, 2);
   const probability = Math.round((Number(result?.phishing_probability) || 0) * 100);
-  const possibleIssue = result?.attack_explanation?.attack_type;
+  const visualIssue = result?.visual_clone?.visual_clone_confidence === "medium"
+    ? "Visual brand mismatch detected."
+    : "";
+  const possibleIssue = visualIssue || result?.attack_explanation?.attack_type;
 
   banner.innerHTML = `
     <div style="display:flex; gap:12px; align-items:flex-start; justify-content:space-between;">

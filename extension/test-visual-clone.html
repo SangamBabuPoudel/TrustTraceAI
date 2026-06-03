@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Visual Clone Intelligence Test</title>
+    <link rel="icon" href="https://example.com/apple-logo-favicon.ico" type="image/x-icon">
+    <style>
+      :root {
+        color-scheme: light;
+        font-family: Inter, Arial, sans-serif;
+      }
+
+      body {
+        margin: 0;
+        background: #eef2f7;
+        color: #172033;
+      }
+
+      header {
+        padding: 32px;
+        background: #111827;
+        color: #fff;
+      }
+
+      header p {
+        max-width: 780px;
+        color: #cbd5e1;
+        line-height: 1.6;
+      }
+
+      main {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 22px;
+        padding: 28px;
+      }
+
+      section {
+        border-radius: 22px;
+        background: #fff;
+        box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+        overflow: hidden;
+      }
+
+      .clone-card {
+        display: grid;
+        place-items: center;
+        min-height: 520px;
+        padding: 28px;
+      }
+
+      .login-panel {
+        width: min(360px, 100%);
+        padding: 30px;
+        border: 1px solid #e5e7eb;
+        border-radius: 22px;
+        background: #fff;
+        text-align: center;
+      }
+
+      .brand-logo {
+        display: block;
+        width: 62px;
+        height: 62px;
+        margin: 0 auto 14px;
+        object-fit: contain;
+      }
+
+      .logo-placeholder {
+        display: grid;
+        place-items: center;
+        width: 62px;
+        height: 62px;
+        margin: 0 auto 14px;
+        border-radius: 18px;
+        background: #f3f4f6;
+        color: #111827;
+        font-size: 28px;
+        font-weight: 900;
+      }
+
+      h1,
+      h2 {
+        margin: 0 0 10px;
+      }
+
+      p {
+        color: #4b5563;
+        line-height: 1.5;
+      }
+
+      form {
+        display: grid;
+        gap: 12px;
+        margin-top: 18px;
+      }
+
+      label {
+        display: grid;
+        gap: 6px;
+        text-align: left;
+        color: #374151;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      input {
+        min-height: 44px;
+        padding: 10px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        font: inherit;
+      }
+
+      button {
+        min-height: 46px;
+        border: 0;
+        border-radius: 999px;
+        background: #111827;
+        color: #fff;
+        font: inherit;
+        font-weight: 900;
+      }
+
+      .google button {
+        background: #1a73e8;
+      }
+
+      .openai button {
+        background: #10a37f;
+      }
+
+      .note {
+        padding: 18px;
+        border-top: 1px solid #e5e7eb;
+        background: #f8fafc;
+        color: #475569;
+        font-size: 13px;
+      }
+
+      .safe-card {
+        min-height: 520px;
+        padding: 30px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>TrustTrace AI Visual Clone Intelligence Test</h1>
+      <p>
+        Open this page at http://127.0.0.1:5500/extension/test-visual-clone.html.
+        Localhost URL scoring is skipped, but page content, form analysis, and visual clone metadata are still analyzed.
+      </p>
+    </header>
+
+    <main>
+      <section class="clone-card apple">
+        <div class="login-panel">
+          <img class="brand-logo apple-logo" src="https://example.com/apple-logo.png" alt="Apple logo" title="Apple logo">
+          <h2>Apple ID</h2>
+          <p>Your Apple account has been locked due to unusual activity. Security verification required.</p>
+          <form action="/verify-apple-id" method="post">
+            <label>Email or Apple ID
+              <input type="email" name="apple_id" placeholder="Apple ID">
+            </label>
+            <label>Password
+              <input type="password" name="password" placeholder="Password">
+            </label>
+            <button type="submit">Verify Apple ID</button>
+          </form>
+        </div>
+        <div class="note">Tests Apple visual claim, logo metadata, account-lock language, and password form.</div>
+      </section>
+
+      <section class="clone-card google">
+        <div class="login-panel">
+          <img class="brand-logo google-logo" src="https://example.com/google-logo.png" alt="Google logo" title="Google Account logo">
+          <h2>Google Account</h2>
+          <p>Sign in to continue. Verify it is you before access is restored.</p>
+          <form action="/google-security-check" method="post">
+            <label>Email
+              <input type="email" name="email" placeholder="Email or phone">
+            </label>
+            <label>Password
+              <input type="password" name="password" placeholder="Password">
+            </label>
+            <button type="submit">Continue</button>
+          </form>
+        </div>
+        <div class="note">Tests Google Account heading, sign-in layout, and verification language.</div>
+      </section>
+
+      <section class="clone-card openai">
+        <div class="login-panel">
+          <div class="logo-placeholder" id="chatgpt-logo" title="ChatGPT logo">AI</div>
+          <h2>ChatGPT</h2>
+          <p>Verify your OpenAI account to continue. Account verification and security check required.</p>
+          <form action="/openai-verify" method="post">
+            <label>Email
+              <input type="email" name="openai_email" placeholder="Email">
+            </label>
+            <label>Password
+              <input type="password" name="openai_password" placeholder="Password">
+            </label>
+            <button type="submit">Continue to ChatGPT</button>
+          </form>
+        </div>
+        <div class="note">Tests OpenAI/ChatGPT visual claim, branded login copy, and credential form.</div>
+      </section>
+
+      <section class="safe-card">
+        <h2>Community Newsletter</h2>
+        <p>
+          This neutral card has no known brand claim and no password form. It should not create visual clone warnings.
+        </p>
+        <form action="/newsletter" method="post">
+          <label>Email
+            <input type="email" name="newsletter_email" placeholder="you@example.com">
+          </label>
+          <button type="submit">Subscribe</button>
+        </form>
+      </section>
+    </main>
+  </body>
+</html>

@@ -42,6 +42,58 @@ class AttackExplanationSummary(BaseModel):
     secondary_attack_types: list[str] = Field(default_factory=list)
 
 
+class VisualFaviconMetadata(BaseModel):
+    href: str = ""
+    type: str = ""
+    rel: str = ""
+
+
+class VisualImageMetadata(BaseModel):
+    src: str = ""
+    alt: str = ""
+    title: str = ""
+    class_name: str = ""
+    id: str = ""
+    width: int = 0
+    height: int = 0
+    nearby_text: str = ""
+
+
+class VisualLayoutHints(BaseModel):
+    has_centered_login_card: bool = False
+    has_fullscreen_login_layout: bool = False
+    has_minimal_login_page: bool = False
+
+
+class VisualMetadata(BaseModel):
+    document_title: str = ""
+    primary_headings: list[str] = Field(default_factory=list)
+    favicons: list[VisualFaviconMetadata] = Field(default_factory=list)
+    images: list[VisualImageMetadata] = Field(default_factory=list)
+    logo_candidates: list[VisualImageMetadata] = Field(default_factory=list)
+    button_texts: list[str] = Field(default_factory=list)
+    input_labels: list[str] = Field(default_factory=list)
+    brand_like_text: list[str] = Field(default_factory=list)
+    color_hints: list[str] = Field(default_factory=list)
+    layout_hints: VisualLayoutHints = Field(default_factory=VisualLayoutHints)
+
+
+class VisualCloneSignalSummary(BaseModel):
+    type: str
+    severity: Literal["low", "medium", "high"]
+    brand: str
+    message: str
+
+
+class VisualCloneSummary(BaseModel):
+    is_visual_clone_suspected: bool = False
+    visual_clone_score: int = Field(default=0, ge=0, le=100)
+    visual_clone_confidence: Literal["low", "medium", "high"] = "low"
+    primary_clone_brand: Optional[str] = None
+    claimed_brands: list[str] = Field(default_factory=list)
+    signals: list[VisualCloneSignalSummary] = Field(default_factory=list)
+
+
 class AnalyzeUrlResponse(BaseModel):
     url: str
     risk_level: Literal["low", "medium", "high"]
@@ -71,12 +123,15 @@ class AnalyzePageRequest(BaseModel):
     page_title: str = ""
     visible_text: str = ""
     forms: list[PageFormMetadata] = Field(default_factory=list)
+    visual_metadata: VisualMetadata = Field(default_factory=VisualMetadata)
 
 
 class AnalyzePageSignals(BaseModel):
-    url_signals: list[str]
-    content_signals: list[str]
-    form_signals: list[str]
+    url_signals: list[str] = Field(default_factory=list)
+    content_signals: list[str] = Field(default_factory=list)
+    form_signals: list[str] = Field(default_factory=list)
+    clipboard_signals: list[str] = Field(default_factory=list)
+    visual_clone_signals: list[str] = Field(default_factory=list)
 
 
 class AnalyzePageResponse(BaseModel):
@@ -92,6 +147,7 @@ class AnalyzePageResponse(BaseModel):
     threat_intel: ThreatIntelSummary = Field(default_factory=ThreatIntelSummary)
     deep_analysis: DeepAnalysisSummary = Field(default_factory=DeepAnalysisSummary)
     attack_explanation: AttackExplanationSummary = Field(default_factory=AttackExplanationSummary)
+    visual_clone: VisualCloneSummary = Field(default_factory=VisualCloneSummary)
 
 
 class MessageLink(BaseModel):

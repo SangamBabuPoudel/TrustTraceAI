@@ -36,10 +36,20 @@ async function initWarningPage() {
     item.textContent = signal.message || "Deep URL heuristic signal detected.";
     reasonsElement.appendChild(item);
   });
+  renderVisualCloneWarning(payload.visual_clone);
   renderAttackExplanation(payload.attack_explanation);
 
   document.getElementById("go-back").addEventListener("click", () => goBackToSafety());
   document.getElementById("proceed").addEventListener("click", () => proceedAnyway(payload.original_url));
+}
+
+function renderVisualCloneWarning(visualClone) {
+  const section = document.getElementById("visual-clone-warning");
+  const isHighConfidenceClone = (
+    visualClone?.is_visual_clone_suspected ||
+    visualClone?.visual_clone_confidence === "high"
+  );
+  section.hidden = !isHighConfidenceClone;
 }
 
 function renderAttackExplanation(explanation) {

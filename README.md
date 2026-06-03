@@ -17,6 +17,7 @@ This is a local MVP portfolio project. External threat intelligence APIs and mac
 | Real-time URL risk scoring | Scores URLs through a local FastAPI backend. |
 | Trust score and phishing probability | Returns `trust_score`, `phishing_probability`, and `risk_level`. |
 | Official domain/reputation layer | Reduces false positives for trusted domains like Apple, OpenAI, Google, and Microsoft. |
+| Trusted commerce context | Allows trusted retailers/carriers to mention brands in product listings without false brand-impersonation warnings. |
 | Deep URL heuristics | Detects suspicious TLDs, IP hosts, punycode, homoglyphs, typosquatting, and brand spoofing. |
 | Page content scanning | Checks visible text for urgency, credential, account threat, payment, and scam language. |
 | Fake login form detection | Detects suspicious password forms, cross-domain form actions, missing actions, and HTTP credential collection. |
@@ -30,6 +31,7 @@ This is a local MVP portfolio project. External threat intelligence APIs and mac
 | Attack explanation mode | Explains attack type, how it works, what to avoid, and safer action. |
 | Personal Security Report Card | Local summary of scans, blocked threats, caution pages, risky links, repeated scams, and common attack types. |
 | Clipboard Guardian Mode | Optional local clipboard risk checks for suspicious URLs, OTPs, wallet addresses, recovery phrases, credentials, and copy-value mismatch risks. |
+| Visual Clone Intelligence | Detects metadata-based brand visual claims, fake branded login layouts, logo/favicons hints, and official-domain mismatches without collecting screenshots. |
 | Privacy-first design | Local backend, no cookies/password collection, user-controlled message scans, resettable local stats. |
 
 ## Architecture Overview
@@ -58,6 +60,7 @@ The extension collects only the data needed for the selected workflow. The backe
 2. Reputation and legitimacy
    - Official trusted brand domain verification.
    - Local high-reputation allowlist for MVP testing.
+   - Trusted commerce/retailer context for product pages such as Apple iPhone listings on Verizon, Best Buy, Amazon, Walmart, and similar domains.
    - Future placeholders for Tranco, RDAP/domain age, URLScan, and certificate reputation.
 3. URL and domain heuristics
    - HTTP, suspicious TLDs, IP hosts, encoded characters, URL shorteners, long queries, typosquatting, punycode, homoglyphs, and brand spoofing.
@@ -69,7 +72,9 @@ The extension collects only the data needed for the selected workflow. The backe
    - Local-only summary counters for protection activity.
 7. Clipboard Guardian Mode
    - Opt-in local clipboard safety checks; non-URL clipboard text is not sent to the backend.
-8. Future ML/community learning
+8. Visual Clone Intelligence
+   - Metadata-only brand clone checks using title, headings, favicon/logo metadata, button text, input labels, layout hints, and official domain verification.
+9. Future ML/community learning
    - Placeholder architecture for URL classifiers, community reports, and richer threat intelligence.
 
 ## Screenshots
@@ -82,6 +87,7 @@ These are placeholders for GitHub portfolio screenshots.
 ![Universal Link Scan Summary](docs/screenshots/universal-link-scan.png)
 ![Email Message Scan Result](docs/screenshots/message-scan-result.png)
 ![Attack Explanation Mode](docs/screenshots/attack-explanation-mode.png)
+![Visual Clone Intelligence](docs/screenshots/visual-clone-intelligence.png)
 
 ## Tech Stack
 
@@ -147,6 +153,7 @@ http://127.0.0.1:5500/extension/test-previsit-links.html
 http://127.0.0.1:5500/extension/test-universal-links.html
 http://127.0.0.1:5500/extension/test-attack-explanations.html
 http://127.0.0.1:5500/extension/test-clipboard-guardian.html
+http://127.0.0.1:5500/extension/test-visual-clone.html
 ```
 
 ## Demo Workflow
@@ -171,6 +178,8 @@ Use this as a quick portfolio walkthrough:
    - Show local totals, high-risk blocks, caution warnings, repeated scams, and most common attack type.
 9. Turn on Clipboard Guardian and scan the clipboard test page.
    - Show suspicious URL, wallet mismatch, OTP/code, and recovery phrase warnings.
+10. Scan `test-visual-clone.html`.
+   - Show Visual Clone Intelligence, claimed brands, brand-domain mismatch signals, and fake branded login explanation.
 
 ## Testing Pages
 
@@ -179,6 +188,8 @@ Use this as a quick portfolio walkthrough:
 - `extension/test-previsit-links.html` - safe and risky navigation links.
 - `extension/test-universal-links.html` - mixed visible links for page-wide scanning.
 - `extension/test-attack-explanations.html` - examples for attack explanation mode.
+- `extension/test-clipboard-guardian.html` - clipboard risk scenarios.
+- `extension/test-visual-clone.html` - metadata-only visual brand clone scenarios.
 
 ## Privacy And Safety
 
@@ -191,6 +202,9 @@ Use this as a quick portfolio walkthrough:
 - Security Report Card stores local summary counts only and includes a reset option.
 - Clipboard Guardian is off by default and reads clipboard text only after the user clicks Scan Clipboard Now.
 - Non-URL clipboard text is analyzed locally and is not sent to the backend.
+- Visual Clone Intelligence collects DOM metadata only, such as titles, headings, favicon/logo URLs, image alt text, button text, input labels, and layout hints.
+- Visual Clone Intelligence does not collect screenshots, canvas pixels, or image binaries.
+- Product pages on trusted commerce domains can mention brands without being treated as fake brand identity pages.
 - API keys are not stored in the frontend; external APIs are future backend integrations.
 - The MVP runs locally and does not send data to third-party threat intelligence services.
 
@@ -209,12 +223,14 @@ Completed:
 - MVP 9: Attack Explanation Mode.
 - MVP 10: Personal Security Report Card.
 - MVP 11: Clipboard Guardian Mode.
+- MVP 12: Visual Clone Intelligence.
 
 Future:
 
 - Real Google Safe Browsing / PhishTank / URLHaus integration.
 - Tranco/RDAP/URLScan integration.
 - ML URL classifier.
+- Screenshot similarity and computer-vision clone detection after explicit privacy review.
 - QR code phishing scanner.
 - Community threat intelligence.
 - Personal Security Report Card enhancements.

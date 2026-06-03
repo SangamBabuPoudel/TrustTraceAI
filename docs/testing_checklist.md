@@ -100,3 +100,13 @@ Use this checklist before recording a demo or submitting the project.
 - [ ] Scan recovery phrase/private key text and confirm high-risk warning appears.
 - [ ] Copy official Apple URL and confirm low-risk or safe URL handling.
 - [ ] Confirm report-card clipboard counters increase without storing raw text.
+
+## Visual Clone Intelligence
+
+- [ ] Open `extension/test-visual-clone.html`.
+- [ ] Scan with the popup.
+- [ ] Confirm Visual Clone Intelligence panel appears.
+- [ ] Confirm claimed brands include Apple, Google, and OpenAI/ChatGPT signals.
+- [ ] Confirm high risk due to branded login forms on localhost.
+- [ ] Confirm attack explanation mentions visual brand cloning or fake login page.
+- [ ] Confirm no screenshots, image binaries, or canvas pixels are collected.
