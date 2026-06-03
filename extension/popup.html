@@ -95,6 +95,19 @@
         </div>
       </section>
 
+      <section class="glass-card demo-card" aria-labelledby="demo-mode-label">
+        <div class="section-topline">
+          <span class="eyebrow" id="demo-mode-label">Demo Mode</span>
+        </div>
+        <p class="privacy-note">Preview TrustTrace AI’s major detection features using safe sample scenarios. Demo Mode does not scan your private content.</p>
+        <div class="demo-actions">
+          <button class="primary-button" id="run-demo" type="button">Run Demo Scan</button>
+          <button class="secondary-button" id="open-demo-pages" type="button">Open Demo Pages</button>
+          <button class="secondary-button" id="reset-demo" type="button">Reset Demo</button>
+        </div>
+        <div class="demo-panel" id="demo-panel" hidden></div>
+      </section>
+
       <section class="glass-card result-card" id="result" hidden>
         <div class="score-grid">
           <div class="score-meter" id="score-meter" style="--score-percent: 0%; --risk-color: #2dd4bf;">
@@ -160,6 +173,7 @@
 
     <script src="securityStats.js"></script>
     <script src="clipboardGuardian.js"></script>
+    <script src="demoScenarios.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

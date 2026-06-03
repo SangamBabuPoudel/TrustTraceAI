@@ -16,6 +16,18 @@ Use this checklist before recording a demo or submitting the project.
 - [ ] Run `node --check extension/content.js`.
 - [ ] Run `node --check extension/popup.js`.
 - [ ] Run `node --check extension/warning.js`.
+- [ ] Run `node --check extension/demoScenarios.js`.
+- [ ] Run `node --check extension/demo.js`.
+
+## Demo Mode
+
+- [ ] Open the popup and click Run Demo Scan.
+- [ ] Confirm demo cards appear and say “Demo result — no private data scanned.”
+- [ ] Confirm scenarios cover trusted official site, fake phishing URL, visual clone, scam message, Clipboard Guardian, Universal Link Intelligence, HTTP caution, and report card.
+- [ ] Click Copy Demo Summary and confirm summary text copies.
+- [ ] Click Open Demo Pages and confirm local demo page links appear.
+- [ ] Open `http://127.0.0.1:5500/extension/demo.html` and confirm the static dashboard renders.
+- [ ] Confirm running Demo Mode does not change Security Report Card counters.
 
 ## Official Websites
 

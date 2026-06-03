@@ -39,11 +39,14 @@ Risk Response
   |-- Security Report Card
   |-- Clipboard Guardian Result
   |-- Visual Clone Intelligence Panel
+  |-- Demo Mode Cards
 ```
 
 ## Chrome Extension
 
 - `popup.html`, `popup.css`, `popup.js`: interactive dashboard for page scans, message scans, link scans, copy report, and attack explanations.
+- `demoScenarios.js`: static, clearly labeled sample scenarios for reviewer-friendly Demo Mode.
+- `demo.html`, `demo.css`, `demo.js`: optional static portfolio dashboard for screen recording and screenshots.
 - `content.js`: collects visible page text, form metadata, visual metadata, message candidates, visible links, and search result links. It also injects caution banners and search result badges.
 - `background.js`: MV3 service worker for pre-visit URL checks, high-risk warning redirects, high-risk cache, session bypass, and URL analysis requests from content scripts.
 - `warning.html`, `warning.css`, `warning.js`: high-risk interstitial with risk evidence and attack explanation.
@@ -117,6 +120,12 @@ The analyzer flags a page when it claims a trusted brand, is not on an official 
 Trusted commerce domains such as Verizon, Best Buy, Amazon, Walmart, Target, Costco, AT&T, and T-Mobile can mention brands in product listings without being treated as fake brand identity pages. Product context is separated from identity/login context before clone scoring is applied.
 
 It does not collect screenshots, image binaries, canvas pixels, or visual recordings. Future work could add screenshot similarity or computer-vision models only after explicit privacy review.
+
+## Demo Mode
+
+Demo Mode is an optional popup section that renders static sample scenarios for major TrustTrace AI capabilities. It is clearly labeled as demo output, does not call external APIs, does not scan private content, and does not update the real Security Report Card.
+
+The optional `extension/demo.html` page provides a larger static dashboard for portfolio recordings. It uses the same scenario data as the popup and links to local test pages served from `http://127.0.0.1:5500`.
 
 ## Personal Security Report Card
 

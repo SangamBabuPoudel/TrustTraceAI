@@ -32,6 +32,7 @@ This is a local MVP portfolio project. External threat intelligence APIs and mac
 | Personal Security Report Card | Local summary of scans, blocked threats, caution pages, risky links, repeated scams, and common attack types. |
 | Clipboard Guardian Mode | Optional local clipboard risk checks for suspicious URLs, OTPs, wallet addresses, recovery phrases, credentials, and copy-value mismatch risks. |
 | Visual Clone Intelligence | Detects metadata-based brand visual claims, fake branded login layouts, logo/favicons hints, and official-domain mismatches without collecting screenshots. |
+| Demo Mode | Provides sample scenario cards and local demo page links for quick recruiter/reviewer walkthroughs. |
 | Privacy-first design | Local backend, no cookies/password collection, user-controlled message scans, resettable local stats. |
 
 ## Architecture Overview
@@ -74,7 +75,9 @@ The extension collects only the data needed for the selected workflow. The backe
    - Opt-in local clipboard safety checks; non-URL clipboard text is not sent to the backend.
 8. Visual Clone Intelligence
    - Metadata-only brand clone checks using title, headings, favicon/logo metadata, button text, input labels, layout hints, and official domain verification.
-9. Future ML/community learning
+9. Demo Mode
+   - Static, clearly labeled sample scenarios for portfolio walkthroughs; no private content scanned and no report-card stats changed.
+10. Future ML/community learning
    - Placeholder architecture for URL classifiers, community reports, and richer threat intelligence.
 
 ## Screenshots
@@ -154,31 +157,36 @@ http://127.0.0.1:5500/extension/test-universal-links.html
 http://127.0.0.1:5500/extension/test-attack-explanations.html
 http://127.0.0.1:5500/extension/test-clipboard-guardian.html
 http://127.0.0.1:5500/extension/test-visual-clone.html
+http://127.0.0.1:5500/extension/demo.html
 ```
 
 ## Demo Workflow
 
 Use this as a quick portfolio walkthrough:
 
-1. Scan an official website such as `https://www.apple.com` or `https://openai.com`.
+1. Open the popup and click Run Demo Scan.
+   - Show sample cards for trusted official sites, phishing URLs, visual clones, scam messages, Clipboard Guardian, universal links, attack explanations, and the report card.
+2. Click Open Demo Pages.
+   - Show the local test page list and the `test-universal-links.html` page.
+3. Scan an official website such as `https://www.apple.com` or `https://openai.com`.
    - Show low risk, high trust score, and trust signals.
-2. Scan a fake phishing URL such as `http://apple-login-security.example.com/verify`.
+4. Scan a fake phishing URL such as `http://apple-login-security.example.com/verify`.
    - Show high risk, local blocklist/deep URL signals, and attack explanation.
-3. Click a fake high-risk link from `test-previsit-links.html`.
+5. Click a fake high-risk link from `test-previsit-links.html`.
    - Show the warning page and Proceed Anyway session bypass.
-4. Scan `test-phishing.html`.
+6. Scan `test-phishing.html`.
    - Show fake login form detection and credential-harvesting explanation.
-5. Scan `test-scam-message.html`.
+7. Scan `test-scam-message.html`.
    - Show sender impersonation, message threat detection, suspicious link analysis, and repeated scan count.
-6. Scan links on `test-universal-links.html`.
+8. Scan links on `test-universal-links.html`.
    - Show total scanned links, trusted/caution/high-risk counts, and top risky links.
-7. Open a Google search page.
+9. Open a Google search page.
    - Show TrustTrace search result badges beside visible results.
-8. Open the Security Report section in the popup.
+10. Open the Security Report section in the popup.
    - Show local totals, high-risk blocks, caution warnings, repeated scams, and most common attack type.
-9. Turn on Clipboard Guardian and scan the clipboard test page.
+11. Turn on Clipboard Guardian and scan the clipboard test page.
    - Show suspicious URL, wallet mismatch, OTP/code, and recovery phrase warnings.
-10. Scan `test-visual-clone.html`.
+12. Scan `test-visual-clone.html`.
    - Show Visual Clone Intelligence, claimed brands, brand-domain mismatch signals, and fake branded login explanation.
 
 ## Testing Pages
@@ -190,6 +198,7 @@ Use this as a quick portfolio walkthrough:
 - `extension/test-attack-explanations.html` - examples for attack explanation mode.
 - `extension/test-clipboard-guardian.html` - clipboard risk scenarios.
 - `extension/test-visual-clone.html` - metadata-only visual brand clone scenarios.
+- `extension/demo.html` - static portfolio demo dashboard.
 
 ## Privacy And Safety
 
@@ -205,6 +214,7 @@ Use this as a quick portfolio walkthrough:
 - Visual Clone Intelligence collects DOM metadata only, such as titles, headings, favicon/logo URLs, image alt text, button text, input labels, and layout hints.
 - Visual Clone Intelligence does not collect screenshots, canvas pixels, or image binaries.
 - Product pages on trusted commerce domains can mention brands without being treated as fake brand identity pages.
+- Demo Mode uses clearly labeled sample results and does not scan private content or update real report-card stats.
 - API keys are not stored in the frontend; external APIs are future backend integrations.
 - The MVP runs locally and does not send data to third-party threat intelligence services.
 
@@ -224,6 +234,7 @@ Completed:
 - MVP 10: Personal Security Report Card.
 - MVP 11: Clipboard Guardian Mode.
 - MVP 12: Visual Clone Intelligence.
+- MVP 13: Demo Mode.
 
 Future:
 

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TrustTrace AI Demo Mode</title>
+    <link rel="stylesheet" href="demo.css">
+  </head>
+  <body>
+    <main class="demo-shell">
+      <header class="hero">
+        <div class="brand-mark" aria-hidden="true">TT</div>
+        <div>
+          <p class="eyebrow">Portfolio demo dashboard</p>
+          <h1>TrustTrace AI Demo Mode</h1>
+          <p class="subtitle">A guided, local preview of URL risk scoring, visual clone detection, message scanning, Clipboard Guardian, universal link intelligence, attack explanations, and privacy-first report metrics.</p>
+        </div>
+      </header>
+
+      <section class="overview">
+        <div>
+          <span>Mode</span>
+          <strong>Sample scenarios</strong>
+        </div>
+        <div>
+          <span>Privacy</span>
+          <strong>No private content scanned</strong>
+        </div>
+        <div>
+          <span>APIs</span>
+          <strong>No external calls</strong>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-heading">
+          <p class="eyebrow">Scenario cards</p>
+          <h2>Major TrustTrace AI features</h2>
+        </div>
+        <div class="scenario-grid" id="scenario-grid"></div>
+      </section>
+
+      <section class="architecture">
+        <div class="section-heading">
+          <p class="eyebrow">Architecture</p>
+          <h2>Chrome Extension → FastAPI → Layered scoring → Explainable UI</h2>
+        </div>
+        <p>Demo Mode is static and clearly labeled. The real extension workflows still use the local FastAPI backend, content script, service worker, warning page, caution banner, popup dashboard, and local-only storage.</p>
+      </section>
+
+      <section>
+        <div class="section-heading">
+          <p class="eyebrow">Local demo pages</p>
+          <h2>Open these after running python3 -m http.server 5500</h2>
+        </div>
+        <div class="page-links" id="page-links"></div>
+      </section>
+
+      <p class="privacy-note">Demo Mode uses sample scenarios to show how TrustTrace AI works. It does not scan private content, passwords, cookies, messages, screenshots, or clipboard history.</p>
+    </main>
+
+    <script src="demoScenarios.js"></script>
+    <script src="demo.js"></script>
+  </body>
+</html>

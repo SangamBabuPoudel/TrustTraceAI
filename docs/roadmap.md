@@ -16,6 +16,7 @@
 | MVP 10 | Complete | Personal Security Report Card with local-only summary metrics and reset option. |
 | MVP 11 | Complete | Clipboard Guardian Mode with opt-in local clipboard checks and copy-value mismatch warnings. |
 | MVP 12 | Complete | Visual Clone Intelligence using metadata-only brand claim, logo/favicons, layout, and domain mismatch checks. |
+| MVP 13 | Complete | Demo Mode with clearly labeled sample scenarios, demo page links, and a static portfolio dashboard. |
 
 ## Future Work
 

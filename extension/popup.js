@@ -55,6 +55,10 @@ const securityReportGridElement = document.getElementById("security-report-grid"
 const reportMessageElement = document.getElementById("report-message");
 const refreshReportButton = document.getElementById("refresh-report");
 const resetReportButton = document.getElementById("reset-report");
+const runDemoButton = document.getElementById("run-demo");
+const openDemoPagesButton = document.getElementById("open-demo-pages");
+const resetDemoButton = document.getElementById("reset-demo");
+const demoPanelElement = document.getElementById("demo-panel");
 
 let currentTabUrl = "";
 let latestResult = null;
@@ -1204,6 +1208,119 @@ async function resetLocalSecurityReport() {
   await renderSecurityReport();
 }
 
+function renderDemoMode() {
+  const scenarios = globalThis.TRUSTTRACE_DEMO_SCENARIOS || [];
+  demoPanelElement.hidden = false;
+  demoPanelElement.innerHTML = "";
+
+  const intro = document.createElement("div");
+  intro.className = "demo-intro";
+  intro.textContent = "Demo Mode uses sample scenarios to show how TrustTrace AI works. Demo result — no private data scanned.";
+  demoPanelElement.appendChild(intro);
+
+  scenarios.forEach((scenario, index) => {
+    demoPanelElement.appendChild(createDemoScenarioCard(scenario, index));
+  });
+
+  const copyButton = document.createElement("button");
+  copyButton.className = "secondary-button wide-button";
+  copyButton.type = "button";
+  copyButton.textContent = "Copy Demo Summary";
+  copyButton.addEventListener("click", () => copyText(buildDemoSummary(), copyButton, "Copied"));
+  demoPanelElement.appendChild(copyButton);
+}
+
+function createDemoScenarioCard(scenario, index) {
+  const card = document.createElement("article");
+  card.className = `demo-scenario-card ${scenario.risk_level || "low"}`;
+  card.style.animationDelay = `${index * 45}ms`;
+  const probability = Math.round(Number(scenario.phishing_probability || 0) * 100);
+  const avoidItems = scenario.what_to_avoid?.length
+    ? scenario.what_to_avoid.map((item) => `<li>${escapeHtml(item)}</li>`).join("")
+    : "<li>No special avoidance guidance for this low-risk sample.</li>";
+
+  card.innerHTML = `
+    <div class="demo-card-top">
+      <span class="demo-label">${escapeHtml(scenario.scenario_label || "Demo scenario")}</span>
+      <div class="demo-card-title-row">
+        <strong>${escapeHtml(scenario.title)}</strong>
+        <span class="risk-badge ${escapeHtml(scenario.risk_level || "low")}">${escapeHtml(getRiskLabel(scenario.risk_level || "low"))}</span>
+      </div>
+      <p class="demo-url">${escapeHtml(scenario.url || "")}</p>
+      <span class="demo-result-note">Demo result — no private data scanned.</span>
+    </div>
+    <div class="demo-metrics">
+      <div class="demo-metric"><span>Trust</span><strong>${escapeHtml(String(scenario.trust_score))}/100</strong></div>
+      <div class="demo-metric"><span>Phishing</span><strong>${probability}%</strong></div>
+      <div class="demo-metric"><span>Attack</span><strong>${escapeHtml(shortenText(scenario.attack_type, 18))}</strong></div>
+    </div>
+    <p class="demo-summary">${escapeHtml(scenario.summary || "")}</p>
+    <details class="demo-card-detail">
+      <summary>Details</summary>
+      <h3>Top signals</h3>
+      <ul>${(scenario.signals || []).map((signal) => `<li>${escapeHtml(signal)}</li>`).join("")}</ul>
+      <h3>What to avoid</h3>
+      <ul>${avoidItems}</ul>
+      <h3>Safer action</h3>
+      <p>${escapeHtml(scenario.safer_action || "Use official channels and verify sensitive requests.")}</p>
+    </details>
+  `;
+
+  return card;
+}
+
+function renderDemoPages() {
+  const demoPages = [
+    "test-phishing.html",
+    "test-scam-message.html",
+    "test-previsit-links.html",
+    "test-universal-links.html",
+    "test-clipboard-guardian.html",
+    "test-visual-clone.html",
+    "test-attack-explanations.html"
+  ];
+  demoPanelElement.hidden = false;
+  demoPanelElement.innerHTML = `
+    <div class="demo-intro">
+      Start the local server from the repo root with: python3 -m http.server 5500
+    </div>
+    <ul class="demo-pages-list">
+      ${demoPages.map((page) => {
+        const url = `http://127.0.0.1:5500/extension/${page}`;
+        return `<li><a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(url)}</a></li>`;
+      }).join("")}
+    </ul>
+  `;
+
+  chrome.tabs.create({
+    url: "http://127.0.0.1:5500/extension/test-universal-links.html"
+  });
+}
+
+function resetDemoMode() {
+  demoPanelElement.innerHTML = "";
+  demoPanelElement.hidden = true;
+}
+
+function buildDemoSummary() {
+  return `TrustTrace AI Demo Summary:
+- Trusted official domain detection
+- High-risk phishing URL detection
+- Visual clone/fake login detection
+- Suspicious email/message detection
+- Clipboard Guardian warnings
+- Universal link intelligence
+- Attack explanation mode
+- Personal Security Report Card
+
+Demo Mode uses sample scenarios and does not scan private content.`;
+}
+
+function shortenText(value, maxLength) {
+  const text = String(value || "");
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}...` : text;
+}
+
 function createRiskyLinkCard(item) {
   const card = document.createElement("div");
   card.className = `risky-link-card ${item.classification.level}`;
@@ -1568,6 +1685,9 @@ clipboardToggleElement.addEventListener("change", () => {
 scanClipboardButton.addEventListener("click", scanClipboardNow);
 refreshReportButton.addEventListener("click", renderSecurityReport);
 resetReportButton.addEventListener("click", resetLocalSecurityReport);
+runDemoButton.addEventListener("click", renderDemoMode);
+openDemoPagesButton.addEventListener("click", renderDemoPages);
+resetDemoButton.addEventListener("click", resetDemoMode);
 
 copyUrlButton.addEventListener("click", async () => {
   try {
