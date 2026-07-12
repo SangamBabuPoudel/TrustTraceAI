@@ -1,3 +1,6 @@
+(() => {
+  "use strict";
+
 const MAX_VISIBLE_TEXT_LENGTH = 5000;
 const SEARCH_BADGE_ATTRIBUTE = "data-trusttrace-search-badge";
 const SEARCH_RESULT_ATTRIBUTE = "data-trusttrace-search-scanned";
@@ -1098,3 +1101,5 @@ function escapeHtml(value) {
     .replaceAll("\"", "&quot;")
     .replaceAll("'", "&#039;");
 }
+
+})();

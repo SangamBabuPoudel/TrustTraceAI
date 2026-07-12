@@ -17,6 +17,7 @@
 | MVP 11 | Complete | Clipboard Guardian Mode with opt-in local clipboard checks and copy-value mismatch warnings. |
 | MVP 12 | Complete | Visual Clone Intelligence using metadata-only brand claim, logo/favicons, layout, and domain mismatch checks. |
 | MVP 13 | Complete | Demo Mode with clearly labeled sample scenarios, demo page links, and a static portfolio dashboard. |
+| MVP 14 | Complete | Personal Adaptive Trust with opt-in local domain-level trust metadata, bounded user-feedback adjustments, and future community reputation design. |
 | Final QA | Complete | Manual testing checklist, QA command reference, API regression script, and local regression dashboard. |
 
 ## Future Work
@@ -26,6 +27,13 @@
 - Add date-range filters such as today, week, and all-time.
 - Add lightweight trend summaries.
 - Add exportable privacy-safe report snapshots.
+
+### Personal Adaptive Trust And Community Reputation Enhancements
+
+- Add clearer per-domain feedback history without storing URL paths.
+- Add export/import for privacy-safe local trust preferences.
+- Add a settings page for adaptive learning thresholds and reset controls.
+- Design community reputation APIs that require independent reporter thresholds, rate limits, deduplication, and abuse review before global signals are used.
 
 ### Threat Intelligence Integrations
 

@@ -40,12 +40,15 @@ Risk Response
   |-- Clipboard Guardian Result
   |-- Visual Clone Intelligence Panel
   |-- Demo Mode Cards
+  |-- Personal Adaptive Trust
 ```
 
 ## Chrome Extension
 
 - `popup.html`, `popup.css`, `popup.js`: interactive dashboard for page scans, message scans, link scans, copy report, and attack explanations.
 - `demoScenarios.js`: static, clearly labeled sample scenarios for reviewer-friendly Demo Mode.
+- `adaptiveTrust.js`: optional local domain-level learning model that stores minimal trust metadata in `chrome.storage.local`.
+- `community_reputation_service.py`: future backend placeholder for thresholded, abuse-resistant community reputation. It is not wired into scoring today.
 - `demo.html`, `demo.css`, `demo.js`: optional static portfolio dashboard for screen recording and screenshots.
 - `content.js`: collects visible page text, form metadata, visual metadata, message candidates, visible links, and search result links. It also injects caution banners and search result badges.
 - `background.js`: MV3 service worker for pre-visit URL checks, high-risk warning redirects, high-risk cache, session bypass, and URL analysis requests from content scripts.
@@ -81,6 +84,9 @@ Layer 4: Page, form, visual clone, sender, message, and link analysis
   |
   v
 Layer 5: Attack Explanation Mode
+  |
+  v
+Layer 6: Optional Personal Adaptive Trust
   |
   v
 Risk response rendered in extension UI
@@ -133,6 +139,27 @@ The extension stores local-only summary counters in `chrome.storage.local`. The 
 
 It does not store passwords, cookies, full URLs, full message text, form values, personal identity, or full browsing history. Users can reset the local stats from the popup.
 
+## Personal Adaptive Trust
+
+Personal Adaptive Trust is an opt-in frontend layer that helps reduce repeated false positives on familiar safe domains for one user's browser only. It stores only domain-level metadata in `chrome.storage.local`, such as scan counts, safe/caution/high-risk counts, user feedback counts, last risk level, last trust score, last seen timestamp, and a bounded learned adjustment.
+
+The stored key is the sanitized hostname only, for example `example.com`. Full URL paths, query strings, page text, messages, clipboard content, passwords, cookies, form values, tokens, and browsing history are not stored.
+
+Adaptive adjustments are intentionally small: positive adjustments are capped at `+10`, negative adjustments are capped at `-15`, and positive learning cannot override strong phishing evidence such as known-bad blocklist hits, high-confidence visual clones, fake login forms, brand impersonation, typosquatting, or credential-phishing signals.
+
+## Personal Adaptive Trust Vs Community Reputation
+
+Personal Adaptive Trust is local and private. One user can mark a domain trusted, suspicious, or false positive, but that feedback affects only that user's current browser.
+
+Community reputation is a future/global layer. It should require many independent reports before any global signal is considered. The placeholder `community_reputation_service.py` documents thresholds and abuse controls:
+
+- 1-2 reports: local/user-level signal only.
+- 3-9 independent reports: weak community signal.
+- 10-24 independent reports: medium community confidence.
+- 25+ independent reports: stronger community reputation signal.
+
+Future community reporting must use rate limits, deduplication, independent reporter counts, sanitized domain-only storage, and verified-source weighting. It must not let attackers mass-mark phishing domains as safe, competitors mass-report legitimate domains, or accidental user feedback change global trust for everyone.
+
 ## Clipboard Guardian Mode
 
 Clipboard Guardian is off by default. When enabled, it performs local checks for suspicious clipboard content and copy-button mismatch risks. The popup reads clipboard text only when the user clicks Scan Clipboard Now.
@@ -143,5 +170,7 @@ Non-URL clipboard text is analyzed locally in the extension and is not sent to t
 
 - External threat intelligence APIs are placeholders only.
 - Machine learning models are not implemented yet.
+- Personal Adaptive Trust is a local feedback layer, not a cloud model and not a production reputation system.
+- Community reputation is a documented future placeholder only.
 - This is a local MVP, not a production security product.
 - Browser UI structure can change, so search result annotation may need maintenance over time.

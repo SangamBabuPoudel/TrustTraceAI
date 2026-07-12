@@ -157,6 +157,27 @@ const TRUSTTRACE_DEMO_SCENARIOS = [
     ],
     what_to_avoid: [],
     safer_action: "Use the report card to explain privacy-first local telemetry during a demo."
+  },
+  {
+    id: "adaptive-trust",
+    title: "Personal vs Community Learning",
+    scenario_label: "Personal Adaptive Trust",
+    url: "chrome.storage.local",
+    risk_level: "low",
+    trust_score: 96,
+    phishing_probability: 0.04,
+    attack_type: "No strong attack pattern identified",
+    summary: "Your local feedback can slightly adapt results on your device. Wider reputation changes would require many independent reports and abuse checks.",
+    signals: [
+      "One user feedback = local only.",
+      "Many independent reports = possible future community signal.",
+      "Strong phishing indicators cannot be overridden by learning."
+    ],
+    what_to_avoid: [
+      "Do not treat one complaint as proof for every user.",
+      "Do not use personal trust feedback to ignore password, brand-clone, or known-bad warnings."
+    ],
+    safer_action: "Use Personal Adaptive Trust for local false-positive tuning; require thresholds, deduplication, and abuse checks before any future community reputation signal."
   }
 ];
 

@@ -41,6 +41,8 @@ async function initWarningPage() {
 
   document.getElementById("go-back").addEventListener("click", () => goBackToSafety());
   document.getElementById("proceed").addEventListener("click", () => proceedAnyway(payload.original_url));
+  document.getElementById("false-positive").addEventListener("click", () => markFalsePositive(payload.original_url));
+  document.getElementById("mark-suspicious").addEventListener("click", () => markSuspicious(payload.original_url));
 }
 
 function renderVisualCloneWarning(visualClone) {
@@ -93,6 +95,16 @@ async function proceedAnyway(originalUrl) {
     original_url: originalUrl
   });
   window.location.href = originalUrl;
+}
+
+async function markFalsePositive(originalUrl) {
+  await TrustTraceAdaptiveTrust.markFalsePositive(originalUrl);
+  document.getElementById("feedback-status").textContent = "False-positive feedback saved locally for this browser only. Use Proceed Anyway separately if you still want to visit.";
+}
+
+async function markSuspicious(originalUrl) {
+  await TrustTraceAdaptiveTrust.markDomainSuspicious(originalUrl);
+  document.getElementById("feedback-status").textContent = "Suspicious-domain feedback saved locally for this browser only.";
 }
 
 function goBackToSafety() {

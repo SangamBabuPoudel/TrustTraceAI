@@ -28,7 +28,7 @@ Reload the unpacked extension in `chrome://extensions`.
 
 2. Run Demo Mode.
    - Open the popup and click Run Demo Scan.
-   - Show the sample cards for trusted official domains, fake phishing URLs, visual clone pages, scam messages, Clipboard Guardian, Universal Link Intelligence, attack explanations, and the Security Report Card.
+   - Show the sample cards for trusted official domains, fake phishing URLs, visual clone pages, scam messages, Clipboard Guardian, Universal Link Intelligence, attack explanations, Personal Adaptive Trust, and the Security Report Card.
    - Point out the label: “Demo result — no private data scanned.”
 
 3. Open Demo Pages.
@@ -82,12 +82,19 @@ Reload the unpacked extension in `chrome://extensions`.
    - Show claimed brands, visual clone score, branded login form signals, and visual brand cloning attack explanation.
    - Mention that this uses DOM metadata only, not screenshots or image files.
 
-13. Show final QA coverage.
+13. Show Personal Adaptive Trust.
+   - Open `http://127.0.0.1:5500/extension/test-adaptive-trust.html`.
+   - Turn Personal Adaptive Trust on in the popup.
+   - Explain that it stores only local domain-level scan and feedback counts for this browser.
+   - Explain that one user report does not change global reputation.
+   - Mention that strong phishing evidence cannot be overridden by learning.
+
+14. Show final QA coverage.
    - Open `http://127.0.0.1:5500/extension/test-regression-dashboard.html`.
    - Explain that the dashboard links to all local feature fixtures and safe/risky regression URLs.
    - Mention `docs/testing_checklist.md`, `docs/qa_commands.md`, and `backend/tests/regression_api_tests.py`.
 
-14. Close with architecture.
+15. Close with architecture.
    - “The extension talks to FastAPI, FastAPI runs a multi-layer local scoring pipeline, and the UI renders warnings, banners, badges, and explanations.”
 
 ## Closing Line

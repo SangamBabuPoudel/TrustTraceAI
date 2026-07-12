@@ -33,6 +33,7 @@ This is a local MVP portfolio project. External threat intelligence APIs and mac
 | Clipboard Guardian Mode | Optional local clipboard risk checks for suspicious URLs, OTPs, wallet addresses, recovery phrases, credentials, and copy-value mismatch risks. |
 | Visual Clone Intelligence | Detects metadata-based brand visual claims, fake branded login layouts, logo/favicons hints, and official-domain mismatches without collecting screenshots. |
 | Demo Mode | Provides sample scenario cards and local demo page links for quick recruiter/reviewer walkthroughs. |
+| Personal Adaptive Trust | Optional local domain-level learning that uses safe scan history and user feedback to make small trust adjustments only on the current user's browser. |
 | Privacy-first design | Local backend, no cookies/password collection, user-controlled message scans, resettable local stats. |
 
 ## Architecture Overview
@@ -77,7 +78,13 @@ The extension collects only the data needed for the selected workflow. The backe
    - Metadata-only brand clone checks using title, headings, favicon/logo metadata, button text, input labels, layout hints, and official domain verification.
 9. Demo Mode
    - Static, clearly labeled sample scenarios for portfolio walkthroughs; no private content scanned and no report-card stats changed.
-10. Future ML/community learning
+10. Personal Adaptive Trust
+   - Opt-in local domain-level metadata for repeated safe scans and user feedback.
+   - Bounded adjustments that cannot override strong phishing, fake login, known-bad, visual clone, or typosquatting evidence.
+11. Future community reputation
+   - Design placeholder for global signals that would require many independent reports, deduplication, rate limits, and abuse checks.
+   - A single user complaint never changes TrustTrace detection for everyone.
+12. Future ML/community learning
    - Placeholder architecture for URL classifiers, community reports, and richer threat intelligence.
 
 ## Screenshots
@@ -157,6 +164,7 @@ http://127.0.0.1:5500/extension/test-universal-links.html
 http://127.0.0.1:5500/extension/test-attack-explanations.html
 http://127.0.0.1:5500/extension/test-clipboard-guardian.html
 http://127.0.0.1:5500/extension/test-visual-clone.html
+http://127.0.0.1:5500/extension/test-adaptive-trust.html
 http://127.0.0.1:5500/extension/demo.html
 ```
 
@@ -188,6 +196,8 @@ Use this as a quick portfolio walkthrough:
    - Show suspicious URL, wallet mismatch, OTP/code, and recovery phrase warnings.
 12. Scan `test-visual-clone.html`.
    - Show Visual Clone Intelligence, claimed brands, brand-domain mismatch signals, and fake branded login explanation.
+13. Open `test-adaptive-trust.html`.
+   - Turn on Personal Adaptive Trust, scan a trusted domain, mark it trusted on your device, and show the small local trust signal.
 
 ## Testing Pages
 
@@ -198,6 +208,7 @@ Use this as a quick portfolio walkthrough:
 - `extension/test-attack-explanations.html` - examples for attack explanation mode.
 - `extension/test-clipboard-guardian.html` - clipboard risk scenarios.
 - `extension/test-visual-clone.html` - metadata-only visual brand clone scenarios.
+- `extension/test-adaptive-trust.html` - opt-in local domain learning walkthrough.
 - `extension/test-regression-dashboard.html` - final QA dashboard linking to regression fixtures and test URLs.
 - `extension/demo.html` - static portfolio demo dashboard.
 
@@ -233,6 +244,11 @@ The regression suite checks official trusted domains, trusted commerce product c
 - Visual Clone Intelligence does not collect screenshots, canvas pixels, or image binaries.
 - Product pages on trusted commerce domains can mention brands without being treated as fake brand identity pages.
 - Demo Mode uses clearly labeled sample results and does not scan private content or update real report-card stats.
+- Personal Adaptive Trust is opt-in and stores only local domain-level metadata such as scan counts, feedback counts, last risk level, last trust score, and a bounded adjustment.
+- Personal Adaptive Trust affects only the current user's browser. One user report does not change global TrustTrace reputation.
+- Personal Adaptive Trust does not store full URL paths, query strings, page text, messages, clipboard content, passwords, cookies, form values, tokens, or full browsing history.
+- Personal Adaptive Trust cannot turn strong phishing evidence into a safe result.
+- Future community reputation would require many independent reports, rate limits, deduplication, and verified-source weighting before any global signal is considered.
 - API keys are not stored in the frontend; external APIs are future backend integrations.
 - The MVP runs locally and does not send data to third-party threat intelligence services.
 
@@ -253,6 +269,7 @@ Completed:
 - MVP 11: Clipboard Guardian Mode.
 - MVP 12: Visual Clone Intelligence.
 - MVP 13: Demo Mode.
+- MVP 14: Personal Adaptive Trust with future community reputation design.
 - Final QA / Regression Test Suite.
 
 Future:
@@ -263,6 +280,7 @@ Future:
 - Screenshot similarity and computer-vision clone detection after explicit privacy review.
 - QR code phishing scanner.
 - Community threat intelligence.
+- Community reputation with independent-report thresholds and abuse protection.
 - Personal Security Report Card enhancements.
 
 ## Resume Bullets

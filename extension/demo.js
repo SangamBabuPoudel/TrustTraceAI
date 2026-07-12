@@ -5,6 +5,7 @@ const DEMO_PAGES = [
   "test-universal-links.html",
   "test-clipboard-guardian.html",
   "test-visual-clone.html",
+  "test-adaptive-trust.html",
   "test-attack-explanations.html"
 ];
 

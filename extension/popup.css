@@ -19,7 +19,10 @@ body {
   margin: 0;
   width: 410px;
   max-width: 410px;
+  max-height: 620px;
   overflow-x: hidden;
+  overflow-y: auto;
+  scroll-behavior: smooth;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--text);
   background:
@@ -134,6 +137,10 @@ button {
 .error-card {
   padding: 14px;
   margin-bottom: 12px;
+}
+
+.top-score-card {
+  margin-bottom: 14px;
 }
 
 .url-card {
@@ -433,10 +440,108 @@ button {
   background: rgba(127, 29, 29, 0.22);
 }
 
-.actions {
+.actions,
+.main-actions-card {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+
+.main-actions-card {
+  margin-bottom: 12px;
+  padding: 0;
+}
+
+.main-actions-card .primary-button,
+.main-actions-card .secondary-button {
+  min-height: 42px;
+}
+
+.main-actions-card .action-note,
+.main-actions-card .link-scan-panel {
+  grid-column: 1 / -1;
+}
+
+.main-actions-card .action-note {
+  margin: 0;
+  padding: 0 2px;
+}
+
+.adaptive-card {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+}
+
+.adaptive-card summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+  color: #e8f6ff;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.adaptive-card summary strong {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--muted);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.adaptive-card summary strong.on {
+  background: rgba(45, 212, 191, 0.18);
+  color: var(--low);
+}
+
+.adaptive-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.adaptive-stat {
+  min-width: 0;
+  padding: 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.adaptive-stat span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.adaptive-stat strong {
+  display: block;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+  color: #ffffff;
+  font-size: 14px;
+}
+
+.adaptive-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.adaptive-actions .secondary-button {
+  min-height: 36px;
+  padding: 8px;
+  font-size: 11px;
+}
+
+.footer-status {
+  display: block;
 }
 
 .primary-button,
@@ -774,6 +879,44 @@ button {
   margin-top: 12px;
 }
 
+.security-report-preview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.security-preview-stat {
+  min-width: 0;
+  padding: 8px;
+  border: 1px solid rgba(45, 212, 191, 0.18);
+  border-radius: 12px;
+  background: rgba(45, 212, 191, 0.07);
+}
+
+.security-preview-stat span {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.security-preview-stat strong {
+  display: block;
+  margin-top: 4px;
+  color: #ffffff;
+  font-size: 15px;
+  line-height: 1.15;
+}
+
+.security-report-details {
+  margin-top: 10px;
+}
+
+.security-report-details.hidden {
+  display: none;
+}
+
 .security-stat {
   min-width: 0;
   padding: 10px;
@@ -804,6 +947,11 @@ button {
   font-size: 12px;
   font-weight: 800;
   line-height: 1.4;
+}
+
+.compact-report-message {
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .report-actions {

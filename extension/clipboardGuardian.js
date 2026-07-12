@@ -1,3 +1,6 @@
+(() => {
+  "use strict";
+
 const CLIPBOARD_SUSPICIOUS_TLDS = [
   ".xyz",
   ".top",
@@ -286,3 +289,5 @@ globalThis.TrustTraceClipboardGuardian = {
   compareVisibleAndCopiedValue,
   classifyClipboardRisk
 };
+
+})();

@@ -32,6 +32,7 @@ node --check extension/background.js
 node --check extension/content.js
 node --check extension/popup.js
 node --check extension/warning.js
+node --check extension/adaptiveTrust.js
 node --check extension/clipboardGuardian.js
 node --check extension/securityStats.js
 node --check extension/demoScenarios.js

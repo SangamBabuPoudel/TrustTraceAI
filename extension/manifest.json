@@ -3,19 +3,47 @@
   "name": "TrustTrace AI",
   "description": "Explainable phishing and scam URL detection for the browser.",
   "version": "0.1.0",
-  "permissions": ["activeTab", "tabs", "scripting", "storage", "webNavigation", "clipboardRead"],
-  "host_permissions": ["http://127.0.0.1:8000/*", "http://*/*", "https://*/*"],
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "activeTab",
+    "tabs",
+    "scripting",
+    "storage",
+    "webNavigation",
+    "clipboardRead"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:8000/*",
+    "http://*/*",
+    "https://*/*"
+  ],
   "action": {
     "default_popup": "popup.html",
-    "default_title": "TrustTrace AI"
+    "default_title": "TrustTrace AI",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
   },
   "background": {
     "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["clipboardGuardian.js", "content.js"]
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "clipboardGuardian.js",
+        "content.js"
+      ]
     }
   ]
 }

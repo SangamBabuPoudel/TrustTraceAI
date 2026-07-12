@@ -25,6 +25,8 @@ TrustTrace AI is designed around minimal collection, local analysis, and user-co
 | Repeated message detection | Hash and short metadata, not full message body. |
 | Security Report Card | Local summary counters and attack type counts. |
 | Clipboard Guardian | User-initiated clipboard text scan; non-URL text is local-only. |
+| Personal Adaptive Trust | Opt-in local domain-level scan counts, feedback counts, last risk level, last trust score, and bounded adjustment for this browser only. |
+| Future community reputation | Placeholder design for thresholded domain-level global signals; not implemented as a reporting pipeline today. |
 
 ## What Is Not Collected
 
@@ -38,6 +40,7 @@ TrustTrace AI is designed around minimal collection, local analysis, and user-co
 - Search query text for annotation.
 - Raw clipboard text or clipboard history.
 - Screenshots, image binaries, canvas pixels, or visual recordings.
+- Full URL paths, query strings, page text, clipboard content, emails/messages, form values, tokens, or browsing history for Personal Adaptive Trust.
 - API keys in frontend code.
 
 ## Repeated Message Storage
@@ -72,6 +75,47 @@ Pre-visit protection sends only the destination URL to the local backend. Page c
 The report card uses `chrome.storage.local` to store local summary counts on this browser. It tracks counts such as total scans, high-risk blocks, caution banners, suspicious messages, high-risk links, fake login forms, repeated scam warnings, and attack type counts.
 
 It does not store full message text, passwords, cookies, form values, personal account data, or full browsing history. The popup includes Reset Local Stats so the user can clear report-card metrics at any time.
+
+## Personal Adaptive Trust
+
+Personal Adaptive Trust is off until the user turns it on in the popup. When enabled, it stores minimal local trust metadata for sanitized domains only. A private URL such as `https://example.com/private/page?token=abc` is reduced to `example.com` before learning data is stored.
+
+Stored:
+
+- Domain.
+- Total scans.
+- Safe, caution, and high-risk scan counts.
+- Last risk level and last trust score.
+- User trusted/suspicious/false-positive feedback counts.
+- Last seen timestamp.
+- Small learned trust adjustment.
+
+Not stored:
+
+- Full URLs, paths, query strings, or tokens.
+- Page text.
+- Passwords or form values.
+- Emails, messages, or mailbox content.
+- Clipboard text.
+- Cookies or session data.
+- Full browsing history.
+
+Personal Adaptive Trust cannot override strong phishing indicators. Known-bad URLs, high-confidence visual clones, credential phishing, typosquatting, suspicious sender identity, clipboard/recovery phrase risks, and other strong high-risk evidence remain high risk even if a user has trusted a domain before.
+
+## Personal Adaptive Trust Vs Community Reputation
+
+Personal learning affects only the current user's browser. One user complaint, trusted mark, suspicious mark, or false-positive report does not change TrustTrace detection for everyone.
+
+Community reputation is a future/global design and is not implemented as a cloud reporting pipeline in this MVP. Any future global signal should:
+
+- Require many independent reports before affecting global trust.
+- Rate-limit and deduplicate reports.
+- Store only sanitized domain-level data.
+- Avoid private URL paths, query strings, page text, passwords, emails, clipboard text, cookies, tokens, and browsing history.
+- Be weighted lower than official-domain reputation and verified threat intelligence.
+- Never override known malicious feeds or strong phishing indicators.
+
+Abuse risks include attackers trying to mass-mark phishing domains as safe, competitors falsely reporting legitimate domains as suspicious, and users accidentally marking the wrong domain. That is why one report should remain local-only.
 
 ## Clipboard Guardian Mode
 

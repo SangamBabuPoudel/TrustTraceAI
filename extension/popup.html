@@ -23,22 +23,7 @@
         </span>
       </header>
 
-      <section class="glass-card url-card" aria-labelledby="current-tab-label">
-        <div class="section-topline">
-          <span class="eyebrow" id="current-tab-label">Current tab</span>
-          <button class="icon-button" id="copy-url" type="button" title="Copy current URL" aria-label="Copy current URL">
-            Copy
-          </button>
-        </div>
-        <p class="url-text" id="current-url">Loading current tab...</p>
-        <div class="protection-status">
-          <span>High-risk blocking: On</span>
-          <span>Medium-risk caution banners: On</span>
-        </div>
-        <p class="privacy-note">Pre-visit protection active for high-risk links.</p>
-      </section>
-
-      <section class="glass-card loading-card" id="loading-state">
+      <section class="glass-card loading-card top-score-card" id="loading-state">
         <div class="scanner" aria-hidden="true">
           <span></span>
         </div>
@@ -48,67 +33,7 @@
         </div>
       </section>
 
-      <section class="glass-card message-card" aria-labelledby="message-scan-label">
-        <div class="section-topline">
-          <span class="eyebrow" id="message-scan-label">Email / message scan</span>
-        </div>
-        <label class="sender-label" for="sender-input">Sender email or phone number</label>
-        <input id="sender-input" class="sender-input" type="text" placeholder="Optional sender">
-        <p class="privacy-note">Only selected or visible text is scanned. Do not scan sensitive personal content unless you choose to.</p>
-        <div class="message-preview" id="message-preview" hidden></div>
-        <div class="nearby-threats" id="nearby-threats" hidden></div>
-        <button class="secondary-button wide-button" id="scan-message" type="button">Scan Email/Message</button>
-      </section>
-
-      <section class="glass-card link-card" aria-labelledby="link-scan-label">
-        <div class="section-topline">
-          <span class="eyebrow" id="link-scan-label">Universal link intelligence</span>
-        </div>
-        <p class="privacy-note">Only visible link URLs are scanned. Page text, passwords, cookies, and private data are not collected for link scanning.</p>
-        <button class="secondary-button wide-button" id="scan-links" type="button">Scan Links on This Page</button>
-        <div class="link-scan-panel" id="link-scan-panel" hidden></div>
-      </section>
-
-      <section class="glass-card clipboard-card" aria-labelledby="clipboard-label">
-        <div class="section-topline">
-          <span class="eyebrow" id="clipboard-label">Clipboard Guardian</span>
-          <label class="toggle-control">
-            <input id="clipboard-toggle" type="checkbox">
-            <span id="clipboard-toggle-label">Off</span>
-          </label>
-        </div>
-        <p class="privacy-note">Clipboard Guardian runs locally. Raw clipboard text is not stored or sent automatically.</p>
-        <button class="secondary-button wide-button" id="scan-clipboard" type="button">Scan Clipboard Now</button>
-        <div class="clipboard-result" id="clipboard-result" hidden></div>
-      </section>
-
-      <section class="glass-card report-card" aria-labelledby="security-report-label">
-        <div class="section-topline">
-          <span class="eyebrow" id="security-report-label">Security Report</span>
-        </div>
-        <p class="privacy-note">Report Card stores only local summary counts on this browser. It does not store passwords, cookies, full email text, or personal account data.</p>
-        <div class="security-report-grid" id="security-report-grid"></div>
-        <p class="report-message" id="report-message"></p>
-        <div class="report-actions">
-          <button class="secondary-button" id="refresh-report" type="button">Refresh Report</button>
-          <button class="secondary-button" id="reset-report" type="button">Reset Local Stats</button>
-        </div>
-      </section>
-
-      <section class="glass-card demo-card" aria-labelledby="demo-mode-label">
-        <div class="section-topline">
-          <span class="eyebrow" id="demo-mode-label">Demo Mode</span>
-        </div>
-        <p class="privacy-note">Preview TrustTrace AI’s major detection features using safe sample scenarios. Demo Mode does not scan your private content.</p>
-        <div class="demo-actions">
-          <button class="primary-button" id="run-demo" type="button">Run Demo Scan</button>
-          <button class="secondary-button" id="open-demo-pages" type="button">Open Demo Pages</button>
-          <button class="secondary-button" id="reset-demo" type="button">Reset Demo</button>
-        </div>
-        <div class="demo-panel" id="demo-panel" hidden></div>
-      </section>
-
-      <section class="glass-card result-card" id="result" hidden>
+      <section class="glass-card result-card top-score-card" id="result" hidden>
         <div class="score-grid">
           <div class="score-meter" id="score-meter" style="--score-percent: 0%; --risk-color: #2dd4bf;">
             <div class="score-inner">
@@ -160,19 +85,117 @@
         </div>
       </section>
 
+      <section class="main-actions-card" aria-label="Main scan actions">
+        <button class="primary-button" id="rescan" type="button">Rescan Current Page</button>
+        <button class="secondary-button" id="scan-page-content" type="button">Scan Page Content</button>
+        <button class="secondary-button" id="scan-links" type="button">Scan Links on This Page</button>
+        <button class="secondary-button" id="copy-report" type="button" disabled>Copy Report</button>
+        <p class="privacy-note action-note">Only visible link URLs are scanned for link intelligence. Page text, passwords, cookies, and private data are not collected for link scanning.</p>
+        <div class="link-scan-panel" id="link-scan-panel" hidden></div>
+      </section>
+
+      <details class="glass-card adaptive-card" id="adaptive-card">
+        <summary>
+          <span>Personal Adaptive Trust</span>
+          <strong id="adaptive-status">Off</strong>
+        </summary>
+        <p class="privacy-note">This only changes your local TrustTrace experience. One user report does not change global reputation.</p>
+        <p class="privacy-note">Personal Adaptive Trust stores only local domain-level safety metadata. It does not store page text, passwords, emails, clipboard content, cookies, or full browsing history.</p>
+        <p class="privacy-note">Community reputation is designed to require many independent reports before any global signal is considered.</p>
+        <div class="adaptive-grid" id="adaptive-summary"></div>
+        <div class="adaptive-actions">
+          <button class="secondary-button" id="adaptive-enable" type="button">Turn On Personal Learning</button>
+          <button class="secondary-button" id="adaptive-disable" type="button">Turn Off Personal Learning</button>
+          <button class="secondary-button" id="adaptive-trusted" type="button">Mark trusted on my device</button>
+          <button class="secondary-button" id="adaptive-suspicious" type="button">Mark suspicious on my device</button>
+          <button class="secondary-button" id="adaptive-false-positive" type="button">Report false positive locally</button>
+          <button class="secondary-button" id="adaptive-reset" type="button">Reset Personal Learning</button>
+        </div>
+        <p class="report-message" id="adaptive-message"></p>
+      </details>
+
+      <section class="glass-card clipboard-card" aria-labelledby="clipboard-label">
+        <div class="section-topline">
+          <span class="eyebrow" id="clipboard-label">Clipboard Guardian</span>
+          <label class="toggle-control">
+            <input id="clipboard-toggle" type="checkbox">
+            <span id="clipboard-toggle-label">Off</span>
+          </label>
+        </div>
+        <p class="privacy-note">Clipboard Guardian runs locally. Raw clipboard text is not stored or sent automatically.</p>
+        <button class="secondary-button wide-button" id="scan-clipboard" type="button">Scan Clipboard Now</button>
+        <div class="clipboard-result" id="clipboard-result" hidden></div>
+      </section>
+
+      <section class="glass-card message-card" aria-labelledby="message-scan-label">
+        <div class="section-topline">
+          <span class="eyebrow" id="message-scan-label">Email / message scan</span>
+        </div>
+        <label class="sender-label" for="sender-input">Sender email or phone number</label>
+        <input id="sender-input" class="sender-input" type="text" placeholder="Optional sender">
+        <p class="privacy-note">Only selected or visible text is scanned. Do not scan sensitive personal content unless you choose to.</p>
+        <div class="message-preview" id="message-preview" hidden></div>
+        <div class="nearby-threats" id="nearby-threats" hidden></div>
+        <button class="secondary-button wide-button" id="scan-message" type="button">Scan Email/Message</button>
+      </section>
+
+      <section class="glass-card report-card" aria-labelledby="security-report-label">
+        <div class="section-topline">
+          <span class="eyebrow" id="security-report-label">Security Report</span>
+        </div>
+        <p class="privacy-note">Local summary only. No passwords, cookies, emails, or private content stored.</p>
+        <div class="security-report-preview" id="security-report-preview"></div>
+        <p class="report-message compact-report-message" id="report-preview-message"></p>
+        <button class="secondary-button wide-button" id="toggle-security-report" type="button">Show Full Report</button>
+        <div class="security-report-details hidden" id="security-report-details">
+          <div class="security-report-grid" id="security-report-grid"></div>
+          <p class="report-message" id="report-message"></p>
+          <div class="report-actions">
+            <button class="secondary-button" id="refresh-report" type="button">Refresh Report</button>
+            <button class="secondary-button" id="reset-report" type="button">Reset Local Stats</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="glass-card demo-card" aria-labelledby="demo-mode-label">
+        <div class="section-topline">
+          <span class="eyebrow" id="demo-mode-label">Demo Mode</span>
+        </div>
+        <p class="privacy-note">Preview TrustTrace AI’s major detection features using safe sample scenarios. Demo Mode does not scan your private content.</p>
+        <div class="demo-actions">
+          <button class="primary-button" id="run-demo" type="button">Run Demo Scan</button>
+          <button class="secondary-button" id="open-demo-pages" type="button">Open Demo Pages</button>
+          <button class="secondary-button" id="reset-demo" type="button">Reset Demo</button>
+        </div>
+        <div class="demo-panel" id="demo-panel" hidden></div>
+      </section>
+
       <section class="glass-card error-card" id="error-state" hidden>
         <strong>Backend unavailable</strong>
         <p>Backend unavailable. Start the FastAPI server and try again.</p>
       </section>
 
-      <footer class="actions">
-        <button class="primary-button" id="rescan" type="button">Rescan</button>
-        <button class="secondary-button" id="copy-report" type="button" disabled>Copy Report</button>
+      <footer class="footer-status">
+        <section class="glass-card url-card" aria-labelledby="current-tab-label">
+          <div class="section-topline">
+            <span class="eyebrow" id="current-tab-label">Current tab</span>
+            <button class="icon-button" id="copy-url" type="button" title="Copy current URL" aria-label="Copy current URL">
+              Copy
+            </button>
+          </div>
+          <p class="url-text" id="current-url">Loading current tab...</p>
+          <div class="protection-status">
+            <span>High-risk blocking: On</span>
+            <span>Medium-risk caution banners: On</span>
+          </div>
+          <p class="privacy-note">Pre-visit protection active for high-risk links.</p>
+        </section>
       </footer>
     </main>
 
     <script src="securityStats.js"></script>
     <script src="clipboardGuardian.js"></script>
+    <script src="adaptiveTrust.js"></script>
     <script src="demoScenarios.js"></script>
     <script src="popup.js"></script>
   </body>

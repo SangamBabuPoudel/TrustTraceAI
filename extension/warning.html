@@ -64,6 +64,16 @@
 
         <p class="privacy-note">Only the destination URL was checked for this pre-visit warning. Page content was not collected.</p>
 
+        <section class="feedback-section">
+          <h2>Local feedback</h2>
+          <p>This feedback updates only your local Personal Adaptive Trust profile. It does not bypass this warning or change global reputation.</p>
+          <div class="feedback-actions">
+            <button id="false-positive" class="safe-button" type="button">Report false positive locally</button>
+            <button id="mark-suspicious" class="danger-button" type="button">Mark suspicious on my device</button>
+          </div>
+          <p id="feedback-status" class="privacy-note"></p>
+        </section>
+
         <div class="actions">
           <button id="go-back" class="safe-button" type="button">Go Back to Safety</button>
           <button id="proceed" class="danger-button" type="button">Proceed Anyway</button>
@@ -71,6 +81,7 @@
       </section>
     </main>
 
+    <script src="adaptiveTrust.js"></script>
     <script src="warning.js"></script>
   </body>
 </html>

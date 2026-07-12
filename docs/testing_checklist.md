@@ -160,6 +160,23 @@ Expected:
 - [ ] Click Open Demo Pages and confirm local demo page links appear.
 - [ ] Open `http://127.0.0.1:5500/extension/demo.html` and confirm static dashboard renders.
 
+## Personal Adaptive Trust
+
+- [ ] Open `extension/test-adaptive-trust.html`.
+- [ ] Confirm Personal Adaptive Trust is user-controlled from the popup.
+- [ ] Turn Personal Adaptive Trust on.
+- [ ] Scan a safe official domain multiple times.
+- [ ] Confirm the domain summary shows total scans and safe scans.
+- [ ] Click Mark trusted on my device and confirm trusted feedback count increases.
+- [ ] Scan again and confirm a small adaptive trust signal can appear.
+- [ ] Click Mark suspicious on my device and confirm negative feedback count increases.
+- [ ] Confirm strong phishing URLs are not downgraded to safe by learning.
+- [ ] Click Report false positive locally on a warning page and confirm it records feedback without bypassing automatically.
+- [ ] Confirm one user's feedback is described as local-only and not global reputation.
+- [ ] Click Reset Personal Learning and confirm local learning data clears.
+- [ ] Confirm no full URL paths, page text, messages, clipboard text, passwords, cookies, or form values are stored.
+- [ ] Confirm future community reputation is documented as requiring many independent reports and abuse checks.
+
 ## Offline Behavior
 
 - [ ] Stop the backend server.
@@ -176,6 +193,7 @@ Expected:
 - [ ] Run `node --check extension/content.js`.
 - [ ] Run `node --check extension/popup.js`.
 - [ ] Run `node --check extension/warning.js`.
+- [ ] Run `node --check extension/adaptiveTrust.js`.
 - [ ] Run `node --check extension/clipboardGuardian.js`.
 - [ ] Run `node --check extension/securityStats.js`.
 - [ ] Run `node --check extension/demoScenarios.js`.
@@ -205,4 +223,5 @@ Expected:
 | Attack Explanation | Fake phishing scan | Attack type, avoid guidance, safer action |  |  |  |
 | Report Card | Popup Security Report | Counters update/reset, no sensitive content |  |  |  |
 | Demo Mode | Popup Demo Mode | Demo cards render and are labeled |  |  |  |
+| Personal Adaptive Trust | `extension/test-adaptive-trust.html` | Opt-in local-only domain learning, bounded adjustment, reset works |  |  |  |
 | Offline behavior | Backend stopped | Offline messaging, page does not break |  |  |  |

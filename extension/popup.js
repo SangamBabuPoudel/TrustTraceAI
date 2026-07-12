@@ -39,6 +39,7 @@ const visualCloneConfidenceElement = document.getElementById("visual-clone-confi
 const visualCloneBrandElement = document.getElementById("visual-clone-brand");
 const visualCloneSignalsElement = document.getElementById("visual-clone-signals");
 const rescanButton = document.getElementById("rescan");
+const scanPageContentButton = document.getElementById("scan-page-content");
 const copyUrlButton = document.getElementById("copy-url");
 const copyReportButton = document.getElementById("copy-report");
 const scanMessageButton = document.getElementById("scan-message");
@@ -51,6 +52,10 @@ const clipboardToggleElement = document.getElementById("clipboard-toggle");
 const clipboardToggleLabelElement = document.getElementById("clipboard-toggle-label");
 const scanClipboardButton = document.getElementById("scan-clipboard");
 const clipboardResultElement = document.getElementById("clipboard-result");
+const securityReportPreviewElement = document.getElementById("security-report-preview");
+const reportPreviewMessageElement = document.getElementById("report-preview-message");
+const securityReportDetailsElement = document.getElementById("security-report-details");
+const toggleSecurityReportButton = document.getElementById("toggle-security-report");
 const securityReportGridElement = document.getElementById("security-report-grid");
 const reportMessageElement = document.getElementById("report-message");
 const refreshReportButton = document.getElementById("refresh-report");
@@ -59,6 +64,15 @@ const runDemoButton = document.getElementById("run-demo");
 const openDemoPagesButton = document.getElementById("open-demo-pages");
 const resetDemoButton = document.getElementById("reset-demo");
 const demoPanelElement = document.getElementById("demo-panel");
+const adaptiveStatusElement = document.getElementById("adaptive-status");
+const adaptiveSummaryElement = document.getElementById("adaptive-summary");
+const adaptiveMessageElement = document.getElementById("adaptive-message");
+const adaptiveEnableButton = document.getElementById("adaptive-enable");
+const adaptiveDisableButton = document.getElementById("adaptive-disable");
+const adaptiveTrustedButton = document.getElementById("adaptive-trusted");
+const adaptiveSuspiciousButton = document.getElementById("adaptive-suspicious");
+const adaptiveFalsePositiveButton = document.getElementById("adaptive-false-positive");
+const adaptiveResetButton = document.getElementById("adaptive-reset");
 
 let currentTabUrl = "";
 let latestResult = null;
@@ -795,9 +809,11 @@ async function scanCurrentUrl() {
       visual_metadata: pageContent.visual_metadata
     });
     applyClipboardSignalsToPageResult(result, pageContent.clipboard_signals);
+    const adaptiveResult = await TrustTraceAdaptiveTrust.applyAdaptiveTrustToResult(result, currentTabUrl);
     latestScanType = "website";
-    renderResult(result);
-    await TrustTraceSecurityStats.recordScanResult(result, "website");
+    renderResult(adaptiveResult);
+    await TrustTraceSecurityStats.recordScanResult(adaptiveResult, "website");
+    await renderAdaptiveTrustSummary(currentTabUrl);
     await renderSecurityReport();
   } catch (error) {
     showError(
@@ -1150,6 +1166,7 @@ function renderLinkScanSummary(scanned) {
 
 async function renderSecurityReport() {
   const stats = await TrustTraceSecurityStats.getSecurityStats();
+  const adaptiveSummary = await TrustTraceAdaptiveTrust.getAdaptiveLearningSummary();
   const mostCommonAttack = getMostCommonAttack(stats.attack_type_counts);
   const riskyItems = (
     Number(stats.high_risk_blocks || 0)
@@ -1175,8 +1192,14 @@ async function renderSecurityReport() {
     ["Clipboard warnings", stats.clipboard_warnings],
     ["Clipboard high risk", stats.clipboard_high_risk_findings],
     ["Copy mismatches", stats.clipboard_mismatch_warnings],
+    ["Learned domains", adaptiveSummary.domain_count],
+    ["Trusted marks", adaptiveSummary.user_trusted_marks],
+    ["Suspicious marks", adaptiveSummary.user_suspicious_marks],
+    ["False positives", adaptiveSummary.false_positive_count],
     ["Top attack", mostCommonAttack]
   ];
+
+  renderSecurityReportPreview(stats);
 
   securityReportGridElement.innerHTML = "";
   reportItems.forEach(([label, value]) => {
@@ -1189,6 +1212,104 @@ async function renderSecurityReport() {
   reportMessageElement.textContent = riskyItems > 0
     ? `TrustTrace AI helped you identify ${riskyItems} risky item${riskyItems === 1 ? "" : "s"}.`
     : "No risky items have been recorded in your local report yet.";
+}
+
+function renderSecurityReportPreview(stats) {
+  const previewItems = [
+    ["URLs scanned", stats.total_url_scans],
+    ["High-risk blocked", stats.high_risk_blocks],
+    ["Cautions shown", stats.medium_cautions],
+    ["Clipboard warnings", stats.clipboard_warnings]
+  ];
+
+  securityReportPreviewElement.innerHTML = "";
+  previewItems.forEach(([label, value]) => {
+    const item = document.createElement("div");
+    item.className = "security-preview-stat";
+    item.innerHTML = `<span>${escapeHtml(label)}</span><strong>${escapeHtml(String(value || 0))}</strong>`;
+    securityReportPreviewElement.appendChild(item);
+  });
+
+  reportPreviewMessageElement.textContent = `${Number(stats.total_url_scans || 0)} URLs scanned • ${Number(stats.high_risk_blocks || 0)} high-risk blocked • ${Number(stats.medium_cautions || 0)} cautions shown`;
+}
+
+function toggleSecurityReportDetails() {
+  const isHidden = securityReportDetailsElement.classList.toggle("hidden");
+  toggleSecurityReportButton.textContent = isHidden ? "Show Full Report" : "Hide Full Report";
+}
+
+async function renderAdaptiveTrustSummary(url = currentTabUrl) {
+  const enabled = await TrustTraceAdaptiveTrust.isAdaptiveLearningEnabled();
+  const domain = TrustTraceAdaptiveTrust.getDomainFromUrl(url || currentTabUrl);
+  const profile = await TrustTraceAdaptiveTrust.getLearningProfile(domain);
+  const adjustment = await TrustTraceAdaptiveTrust.getAdaptiveAdjustment(domain);
+
+  adaptiveStatusElement.textContent = enabled ? "On" : "Off";
+  adaptiveStatusElement.className = enabled ? "on" : "";
+
+  const rows = [
+    ["Domain", domain || "No HTTP/HTTPS page"],
+    ["Total scans", profile.total_scans],
+    ["Safe scans", profile.safe_scan_count],
+    ["Caution scans", profile.caution_scan_count],
+    ["High-risk scans", profile.high_risk_scan_count],
+    ["Trusted marks", profile.user_marked_trusted_count],
+    ["Suspicious marks", profile.user_marked_suspicious_count],
+    ["False positives", profile.false_positive_count],
+    ["Adjustment", formatAdjustment(adjustment)]
+  ];
+
+  adaptiveSummaryElement.innerHTML = rows.map(([label, value]) => `
+    <div class="adaptive-stat">
+      <span>${escapeHtml(label)}</span>
+      <strong>${escapeHtml(String(value))}</strong>
+    </div>
+  `).join("");
+}
+
+async function setAdaptiveEnabled(enabled) {
+  await TrustTraceAdaptiveTrust.setAdaptiveLearningEnabled(enabled);
+  adaptiveMessageElement.textContent = enabled
+    ? "Personal Adaptive Trust is on for future scans on this browser only."
+    : "Personal Adaptive Trust is off. Existing local learning data is preserved until reset.";
+  await renderAdaptiveTrustSummary(currentTabUrl);
+}
+
+async function markCurrentDomainTrusted() {
+  await TrustTraceAdaptiveTrust.markDomainTrusted(currentTabUrl);
+  adaptiveMessageElement.textContent = "Current domain marked trusted on this device only.";
+  await renderAdaptiveTrustSummary(currentTabUrl);
+  await renderSecurityReport();
+}
+
+async function markCurrentDomainSuspicious() {
+  await TrustTraceAdaptiveTrust.markDomainSuspicious(currentTabUrl);
+  adaptiveMessageElement.textContent = "Current domain marked suspicious on this device only.";
+  await renderAdaptiveTrustSummary(currentTabUrl);
+  await renderSecurityReport();
+}
+
+async function reportCurrentDomainFalsePositive() {
+  await TrustTraceAdaptiveTrust.markFalsePositive(currentTabUrl);
+  adaptiveMessageElement.textContent = "False-positive feedback saved locally for this domain. It does not change global reputation.";
+  await renderAdaptiveTrustSummary(currentTabUrl);
+  await renderSecurityReport();
+}
+
+async function resetAdaptiveLearningFromPopup() {
+  const shouldReset = confirm("Reset local Personal Adaptive Trust data?");
+  if (!shouldReset) {
+    return;
+  }
+  await TrustTraceAdaptiveTrust.resetAdaptiveLearning();
+  adaptiveMessageElement.textContent = "Personal Adaptive Trust data reset.";
+  await renderAdaptiveTrustSummary(currentTabUrl);
+  await renderSecurityReport();
+}
+
+function formatAdjustment(adjustment) {
+  const value = Number(adjustment || 0);
+  return value > 0 ? `+${value}` : String(value);
 }
 
 function getMostCommonAttack(attackTypeCounts) {
@@ -1277,6 +1398,7 @@ function renderDemoPages() {
     "test-universal-links.html",
     "test-clipboard-guardian.html",
     "test-visual-clone.html",
+    "test-adaptive-trust.html",
     "test-attack-explanations.html"
   ];
   demoPanelElement.hidden = false;
@@ -1677,6 +1799,7 @@ Repeat Signals:
 }
 
 rescanButton.addEventListener("click", scanCurrentUrl);
+scanPageContentButton.addEventListener("click", scanCurrentUrl);
 scanMessageButton.addEventListener("click", scanEmailMessage);
 scanLinksButton.addEventListener("click", scanLinksOnPage);
 clipboardToggleElement.addEventListener("change", () => {
@@ -1685,9 +1808,16 @@ clipboardToggleElement.addEventListener("change", () => {
 scanClipboardButton.addEventListener("click", scanClipboardNow);
 refreshReportButton.addEventListener("click", renderSecurityReport);
 resetReportButton.addEventListener("click", resetLocalSecurityReport);
+toggleSecurityReportButton.addEventListener("click", toggleSecurityReportDetails);
 runDemoButton.addEventListener("click", renderDemoMode);
 openDemoPagesButton.addEventListener("click", renderDemoPages);
 resetDemoButton.addEventListener("click", resetDemoMode);
+adaptiveEnableButton.addEventListener("click", () => setAdaptiveEnabled(true));
+adaptiveDisableButton.addEventListener("click", () => setAdaptiveEnabled(false));
+adaptiveTrustedButton.addEventListener("click", markCurrentDomainTrusted);
+adaptiveSuspiciousButton.addEventListener("click", markCurrentDomainSuspicious);
+adaptiveFalsePositiveButton.addEventListener("click", reportCurrentDomainFalsePositive);
+adaptiveResetButton.addEventListener("click", resetAdaptiveLearningFromPopup);
 
 copyUrlButton.addEventListener("click", async () => {
   try {
@@ -1711,4 +1841,5 @@ copyReportButton.addEventListener("click", async () => {
 
 scanCurrentUrl();
 initializeClipboardGuardianControls();
+renderAdaptiveTrustSummary();
 renderSecurityReport();
