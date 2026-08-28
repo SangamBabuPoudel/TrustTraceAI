@@ -1,6 +1,3 @@
-const URL_API_URL = "http://127.0.0.1:8000/api/analyze-url";
-const PAGE_API_URL = "http://127.0.0.1:8000/api/analyze-page";
-const MESSAGE_API_URL = "http://127.0.0.1:8000/api/analyze-message";
 const MAX_VISIBLE_TEXT_LENGTH = 5000;
 const LINK_SCAN_CONCURRENCY = 4;
 const CLIPBOARD_GUARDIAN_SETTING_KEY = "trusttraceClipboardGuardianEnabled";
@@ -454,19 +451,7 @@ function collectTrustTracePageSnapshot(maxVisibleTextLength, clipboardGuardianEn
 }
 
 async function analyzePage(payload) {
-  const response = await fetch(PAGE_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-
-  if (!response.ok) {
-    throw new Error("The local TrustTrace API returned an error.");
-  }
-
-  return response.json();
+  return TrustTraceLocalAnalyzer.analyzePage(payload);
 }
 
 async function analyzeUrlOnly(url) {
@@ -475,42 +460,18 @@ async function analyzeUrlOnly(url) {
     return popupLinkCache.get(normalizedUrl);
   }
 
-  const response = await fetch(URL_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ url: normalizedUrl })
-  });
-
-  if (!response.ok) {
-    throw new Error("The local TrustTrace API returned an error.");
-  }
-
-  const result = await response.json();
+  const result = TrustTraceLocalAnalyzer.analyzeUrl(normalizedUrl);
   popupLinkCache.set(normalizedUrl, result);
   return result;
 }
 
 async function analyzeMessage(payload) {
-  const response = await fetch(MESSAGE_API_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
-
-  if (!response.ok) {
-    throw new Error("The local TrustTrace API returned an error.");
-  }
-
-  return response.json();
+  return TrustTraceLocalAnalyzer.analyzeMessage(payload);
 }
 
 function setBackendStatus(status) {
   backendStatusElement.className = `status-pill ${status}`;
-  backendStatusElement.innerHTML = `<span class="status-dot"></span>${status === "online" ? "Online" : status === "offline" ? "Offline" : "Checking"}`;
+  backendStatusElement.innerHTML = `<span class="status-dot"></span>${status === "online" ? "Local" : status === "offline" ? "Unavailable" : "Checking"}`;
 }
 
 function showLoading() {
@@ -817,8 +778,8 @@ async function scanCurrentUrl() {
     await renderSecurityReport();
   } catch (error) {
     showError(
-      "Backend unavailable",
-      "Backend unavailable. Start the FastAPI server and try again."
+      "Analysis unavailable",
+      "TrustTrace local analysis could not complete on this page."
     );
   }
 }
@@ -941,8 +902,8 @@ async function scanEmailMessage() {
     await renderSecurityReport();
   } catch (error) {
     showError(
-      "Backend unavailable",
-      "Backend unavailable. Start the FastAPI server and try again."
+      "Analysis unavailable",
+      "TrustTrace local message analysis could not complete on this page."
     );
   }
 }
@@ -979,7 +940,7 @@ async function scanLinksOnPage() {
     setBackendStatus("online");
     renderLinkScanSummary(scanned);
   } catch (error) {
-    renderLinkScanError("Backend unavailable. Start the FastAPI server and try again.");
+    renderLinkScanError("TrustTrace local link analysis could not complete on this page.");
   } finally {
     scanLinksButton.disabled = false;
   }
@@ -1404,18 +1365,18 @@ function renderDemoPages() {
   demoPanelElement.hidden = false;
   demoPanelElement.innerHTML = `
     <div class="demo-intro">
-      Start the local server from the repo root with: python3 -m http.server 5500
+      Demo pages are development fixtures and are not required for normal protection.
     </div>
     <ul class="demo-pages-list">
       ${demoPages.map((page) => {
-        const url = `http://127.0.0.1:5500/extension/${page}`;
+        const url = chrome.runtime.getURL(page);
         return `<li><a href="${escapeHtml(url)}" target="_blank" rel="noreferrer">${escapeHtml(url)}</a></li>`;
       }).join("")}
     </ul>
   `;
 
   chrome.tabs.create({
-    url: "http://127.0.0.1:5500/extension/test-universal-links.html"
+    url: chrome.runtime.getURL("demo.html")
   });
 }
 

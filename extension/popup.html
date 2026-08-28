@@ -157,7 +157,7 @@
         </div>
       </section>
 
-      <section class="glass-card demo-card" aria-labelledby="demo-mode-label">
+      <section class="glass-card demo-card" aria-labelledby="demo-mode-label" hidden>
         <div class="section-topline">
           <span class="eyebrow" id="demo-mode-label">Demo Mode</span>
         </div>
@@ -171,8 +171,8 @@
       </section>
 
       <section class="glass-card error-card" id="error-state" hidden>
-        <strong>Backend unavailable</strong>
-        <p>Backend unavailable. Start the FastAPI server and try again.</p>
+        <strong>Analysis unavailable</strong>
+        <p>TrustTrace local analysis could not complete on this page.</p>
       </section>
 
       <footer class="footer-status">
@@ -195,6 +195,7 @@
 
     <script src="securityStats.js"></script>
     <script src="clipboardGuardian.js"></script>
+    <script src="localAnalyzer.js"></script>
     <script src="adaptiveTrust.js"></script>
     <script src="demoScenarios.js"></script>
     <script src="popup.js"></script>

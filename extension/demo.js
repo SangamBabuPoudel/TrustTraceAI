@@ -42,7 +42,7 @@ function renderScenarioCards() {
 function renderDemoPageLinks() {
   const links = document.getElementById("page-links");
   links.innerHTML = DEMO_PAGES.map((page) => {
-    const url = `http://127.0.0.1:5500/extension/${page}`;
+    const url = chrome.runtime?.getURL ? chrome.runtime.getURL(page) : page;
     return `<a href="${escapeHtml(url)}">${escapeHtml(url)}</a>`;
   }).join("");
 }

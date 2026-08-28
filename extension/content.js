@@ -575,13 +575,17 @@ function initSearchResultBadges() {
 }
 
 function scanVisibleSearchResults() {
-  const results = extractVisibleLinks({
-    mode: "search",
-    maxLinks: MAX_SEARCH_RESULTS_TO_SCAN
-  }).map((result) => ({
-    link: document.querySelector(`[data-trusttrace-link-id="${cssEscape(result.id)}"]`),
-    targetUrl: result.href
-  })).filter((result) => result.link);
+  const seenUrls = new Set();
+  const results = getSearchResultLinkCandidates()
+    .map((link) => ({ link, targetUrl: extractSearchResultUrl(link) }))
+    .filter(({ link, targetUrl }) => {
+      if (!targetUrl || seenUrls.has(targetUrl) || !isAllowedHref(targetUrl) || !isSearchResultLink(link, targetUrl)) {
+        return false;
+      }
+      seenUrls.add(targetUrl);
+      return true;
+    })
+    .slice(0, MAX_SEARCH_RESULTS_TO_SCAN);
 
   results.forEach(({ link, targetUrl }) => {
     if (link.getAttribute(SEARCH_RESULT_ATTRIBUTE) === targetUrl) {
@@ -604,7 +608,7 @@ function scanVisibleSearchResults() {
         updateSearchBadge(badge, {
           label: "TrustTrace: Unknown",
           level: "offline",
-          title: "TrustTrace AI backend is unavailable."
+          title: "TrustTrace AI local analysis is unavailable."
         });
       });
   });
@@ -649,8 +653,11 @@ function getVisibleLinkCandidates(mode) {
 
 function getSearchResultLinkCandidates() {
   const engine = getSearchEngine();
+  if (engine === "google") {
+    return getGoogleSearchResultLinkCandidates();
+  }
+
   const selectorsByEngine = {
-    google: "#search a[href]",
     bing: "#b_results .b_algo h2 a[href], #b_results .b_title a[href]",
     duckduckgo: "article a[href], [data-testid='result-title-a'][href], .result__title a[href]",
     yahoo: "#web a[href], .algo a[href]"
@@ -658,6 +665,30 @@ function getSearchResultLinkCandidates() {
   const selector = selectorsByEngine[engine] || "a[href]";
 
   return Array.from(document.querySelectorAll(selector))
+    .filter((link) => isAllowedVisibleLink(link) && isSearchResultLink(link, extractSearchResultUrl(link)));
+}
+
+function getGoogleSearchResultLinkCandidates() {
+  const anchors = new Set();
+  const roots = Array.from(document.querySelectorAll("#search, #rso, [role='main']"));
+  const searchRoot = roots.length ? roots : [document];
+
+  searchRoot.forEach((root) => {
+    root.querySelectorAll("a[href]").forEach((link) => {
+      if (link.querySelector("h3") || link.closest(".yuRUbf, .MjjYud, .g, [data-sokoban-container]")?.querySelector("h3")) {
+        anchors.add(link);
+      }
+    });
+
+    root.querySelectorAll("h3").forEach((heading) => {
+      const anchor = heading.closest("a[href]");
+      if (anchor) {
+        anchors.add(anchor);
+      }
+    });
+  });
+
+  return Array.from(anchors)
     .filter((link) => isAllowedVisibleLink(link) && isSearchResultLink(link, extractSearchResultUrl(link)));
 }
 
@@ -889,27 +920,37 @@ async function analyzeSearchResult(targetUrl) {
     return searchResultCache.get(targetUrl);
   }
 
-  const response = await chrome.runtime.sendMessage({
-    type: "TRUSTTRACE_ANALYZE_SEARCH_RESULT",
-    url: targetUrl
-  });
+  try {
+    const response = await chrome.runtime.sendMessage({
+      type: "TRUSTTRACE_ANALYZE_SEARCH_RESULT",
+      url: targetUrl
+    });
 
-  if (!response?.ok) {
-    throw new Error(response?.error || "Search result analysis failed.");
+    if (response?.ok) {
+      searchResultCache.set(targetUrl, response.result);
+      return response.result;
+    }
+  } catch (error) {
+    // Fall through to browser-local analysis below.
   }
 
-  searchResultCache.set(targetUrl, response.result);
-  return response.result;
+  if (globalThis.TrustTraceLocalAnalyzer?.analyzeUrl) {
+    const result = globalThis.TrustTraceLocalAnalyzer.analyzeUrl(targetUrl);
+    searchResultCache.set(targetUrl, result);
+    return result;
+  }
+
+  throw new Error("Search result analysis failed.");
 }
 
 function updateSearchBadgeFromResult(badge, targetUrl, result) {
   const displayResult = isOfficialGitHubUrl(targetUrl) ? buildOfficialGitHubBadgeResult(result) : result;
   const level = getSearchBadgeLevel(displayResult);
   const labels = {
-    trusted: `TrustTrace: Trusted ${displayResult?.trust_score ?? ""}`,
-    low: `TrustTrace: Trusted ${displayResult?.trust_score ?? ""}`,
-    caution: `TrustTrace: Caution ${displayResult?.trust_score ?? ""}`,
-    high: `TrustTrace: High Risk ${displayResult?.trust_score ?? ""}`
+    trusted: `TrustTrace: Trusted • ${displayResult?.trust_score ?? ""}`,
+    low: `TrustTrace: Low Risk • ${displayResult?.trust_score ?? ""}`,
+    caution: `TrustTrace: Caution • ${displayResult?.trust_score ?? ""}`,
+    high: `TrustTrace: High Risk • ${displayResult?.trust_score ?? ""}`
   };
 
   updateSearchBadge(badge, {

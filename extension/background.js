@@ -1,6 +1,5 @@
-importScripts("securityStats.js");
+importScripts("securityStats.js", "localAnalyzer.js");
 
-const ANALYZE_URL_ENDPOINT = "http://127.0.0.1:8000/api/analyze-url";
 const HIGH_RISK_CACHE_KEY = "trusttraceHighRiskCache";
 const SESSION_ALLOWLIST_KEY = "trusttraceSessionAllowlist";
 const WARNING_PAYLOAD_PREFIX = "trusttraceWarning:";
@@ -101,7 +100,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })
       .catch((error) => {
         console.warn("TrustTrace AI search-result analysis unavailable.", error);
-        sendResponse({ ok: false, error: "Backend unavailable." });
+        sendResponse({ ok: false, error: "Local analysis unavailable." });
       });
     return true;
   }
@@ -139,7 +138,7 @@ async function showCautionBanner(tabId, result) {
     try {
       await chrome.scripting.executeScript({
         target: { tabId },
-        files: ["clipboardGuardian.js", "content.js"]
+        files: ["clipboardGuardian.js", "localAnalyzer.js", "content.js"]
       });
       await chrome.tabs.sendMessage(tabId, {
         type: "SHOW_CAUTION_BANNER",
@@ -152,19 +151,7 @@ async function showCautionBanner(tabId, result) {
 }
 
 async function analyzeUrl(url) {
-  const response = await fetch(ANALYZE_URL_ENDPOINT, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ url })
-  });
-
-  if (!response.ok) {
-    throw new Error("TrustTrace API returned an error.");
-  }
-
-  return response.json();
+  return TrustTraceLocalAnalyzer.analyzeUrl(url);
 }
 
 async function analyzeSearchResultUrl(url) {
@@ -222,7 +209,7 @@ function shouldInspectUrl(url) {
       return false;
     }
 
-    return !["localhost", "127.0.0.1", "0.0.0.0", "::1"].includes(hostname);
+    return Boolean(hostname);
   } catch (error) {
     return false;
   }
