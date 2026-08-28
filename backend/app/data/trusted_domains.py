@@ -19,7 +19,7 @@ TRUSTED_BRANDS = {
     "usps": ["usps.com"],
     "dhl": ["dhl.com"],
     "fedex": ["fedex.com"],
-    "github": ["github.com"],
+    "github": ["github.com", "githubstatus.com"],
     "wikipedia": ["wikipedia.org"],
 }
 
@@ -40,6 +40,12 @@ HIGH_REPUTATION_DOMAINS = {
     "microsoft.com",
     "amazon.com",
     "github.com",
+    "www.github.com",
+    "gist.github.com",
+    "docs.github.com",
+    "support.github.com",
+    "githubstatus.com",
+    "www.githubstatus.com",
     "wikipedia.org",
     "verizon.com",
     "www.verizon.com",

@@ -3,6 +3,9 @@ KNOWN_BAD_URLS = {
     "https://openai-login-verify.example.com/password",
     "https://claude-security-login.example.com",
     "https://gemini-google-verify-account.xyz/login",
+    "http://github-login-security.example.com/verify",
+    "https://github-security-verify.xyz/login",
+    "https://githhub-login.example.com",
 }
 
 KNOWN_BAD_DOMAINS = {
@@ -10,6 +13,9 @@ KNOWN_BAD_DOMAINS = {
     "openai-login-verify.example.com",
     "claude-security-login.example.com",
     "gemini-google-verify-account.xyz",
+    "github-login-security.example.com",
+    "github-security-verify.xyz",
+    "githhub-login.example.com",
 }
 
 FUTURE_FEED_SOURCES = [

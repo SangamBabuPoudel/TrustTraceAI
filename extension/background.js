@@ -4,6 +4,10 @@ const ANALYZE_URL_ENDPOINT = "http://127.0.0.1:8000/api/analyze-url";
 const HIGH_RISK_CACHE_KEY = "trusttraceHighRiskCache";
 const SESSION_ALLOWLIST_KEY = "trusttraceSessionAllowlist";
 const WARNING_PAYLOAD_PREFIX = "trusttraceWarning:";
+const OFFICIAL_GITHUB_DOMAINS = [
+  "github.com",
+  "githubstatus.com"
+];
 
 const pendingCautionsByTab = new Map();
 const inFlightByTab = new Map();
@@ -24,7 +28,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
     return;
   }
 
-  const cachedResult = await getCachedHighRiskResult(targetUrl);
+  const cachedResult = isOfficialGitHubUrl(targetUrl) ? null : await getCachedHighRiskResult(targetUrl);
   if (cachedResult) {
     await TrustTraceSecurityStats.recordWarningBlock(cachedResult);
     await redirectToWarning(tabId, targetUrl, cachedResult);
@@ -164,6 +168,10 @@ async function analyzeUrl(url) {
 }
 
 async function analyzeSearchResultUrl(url) {
+  if (isOfficialGitHubUrl(url)) {
+    return normalizeOfficialGitHubResult(await analyzeUrl(url));
+  }
+
   const cachedResult = await getCachedHighRiskResult(url);
   if (cachedResult) {
     return cachedResult;
@@ -174,6 +182,31 @@ async function analyzeSearchResultUrl(url) {
     await cacheHighRiskResult(url, result);
   }
   return result;
+}
+
+function isOfficialGitHubUrl(url) {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    return OFFICIAL_GITHUB_DOMAINS.some((domain) => hostname === domain || hostname.endsWith(`.${domain}`));
+  } catch (error) {
+    return false;
+  }
+}
+
+function normalizeOfficialGitHubResult(result) {
+  const trustScore = Math.max(Number(result?.trust_score || 0), 95);
+  return {
+    ...result,
+    risk_level: "low",
+    trust_score: trustScore,
+    phishing_probability: Math.min(Number(result?.phishing_probability ?? 0.05), 0.05),
+    confidence: "high",
+    reasons: [],
+    trust_signals: [
+      "Official GitHub domain detected.",
+      ...(result?.trust_signals || [])
+    ]
+  };
 }
 
 function shouldInspectUrl(url) {

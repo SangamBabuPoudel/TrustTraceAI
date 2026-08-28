@@ -22,6 +22,11 @@ OFFICIAL_SAFE_CASES = [
     "https://chatgpt.com",
     "https://claude.ai",
     "https://gemini.google.com",
+    "https://github.com",
+    "https://github.com/login",
+    "https://github.com/apps/desktop",
+    "https://github.com/desktop/desktop",
+    "https://docs.github.com",
     "https://www.verizon.com/shop/online/free-cell-phones/apple/",
 ]
 
@@ -31,6 +36,9 @@ FAKE_RISKY_CASES = [
     "https://claude-security-login.example.com",
     "https://gemini-google-verify-account.xyz/login",
     "https://gooogle-login.example.com",
+    "http://github-login-security.example.com/verify",
+    "https://githhub-login.example.com",
+    "https://github-security-verify.xyz/login",
 ]
 
 

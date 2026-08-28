@@ -26,7 +26,7 @@ from app.services.message_link_analyzer import analyze_message_links
 from app.services.page_content_analyzer import analyze_page_content
 from app.services.risk_scoring_engine import score_url_risk
 from app.services.sender_identity_analyzer import analyze_sender_identity
-from app.services.reputation_service import ReputationResult, analyze_url_reputation
+from app.services.reputation_service import ReputationResult, analyze_url_reputation, is_domain_or_subdomain
 from app.services.threat_intel_service import get_threat_intel_summary
 from app.services.url_feature_extractor import extract_url_features
 from app.services.visual_clone_analyzer import analyze_visual_clone
@@ -320,6 +320,32 @@ def _analyze_url_with_pipeline(url: str) -> dict:
             "attack_explanation": attack_explanation,
         }
 
+    if _is_official_github_reputation(reputation) and not known_bad:
+        attack_explanation = build_attack_explanation(
+            reasons=[],
+            risk_level="low",
+            threat_intel=_threat_intel_summary(threat_intel).dict(),
+            deep_analysis=DeepAnalysisSummary().dict(),
+        )
+        trust_signals = _dedupe_strings(
+            ["Official GitHub domain detected.", "Domain is in the local high-reputation list."]
+            + reputation.trust_signals
+        )
+        return {
+            "points": 5,
+            "risk_level": "low",
+            "phishing_probability": 0.05,
+            "trust_score": 95,
+            "reasons": [],
+            "confidence": "high",
+            "trust_signals": trust_signals,
+            "reputation": _reputation_summary(reputation),
+            "raw_reputation": reputation,
+            "threat_intel": _threat_intel_summary(threat_intel),
+            "deep_analysis": DeepAnalysisSummary(),
+            "attack_explanation": attack_explanation,
+        }
+
     base_score = score_url_risk(features)
     points = round(base_score.phishing_probability * 100)
     reasons = _remove_safe_reasons(build_explanations(features))
@@ -419,6 +445,17 @@ def _reputation_summary(reputation: ReputationResult) -> ReputationSummary:
         is_high_reputation_domain=reputation.is_high_reputation_domain,
         matched_brand=reputation.matched_brand,
         reputation_score=reputation.reputation_score,
+    )
+
+
+def _is_official_github_reputation(reputation: ReputationResult) -> bool:
+    return (
+        reputation.is_official_brand_domain
+        and reputation.matched_brand == "github"
+        and (
+            is_domain_or_subdomain(reputation.hostname, "github.com")
+            or is_domain_or_subdomain(reputation.hostname, "githubstatus.com")
+        )
     )
 
 

@@ -10,6 +10,10 @@ const MAX_SEARCH_RESULTS_TO_SCAN = 15;
 const DEFAULT_VISIBLE_LINK_LIMIT = 25;
 const PAGE_LINK_SCAN_LIMIT = 30;
 const CLIPBOARD_GUARDIAN_SETTING_KEY = "trusttraceClipboardGuardianEnabled";
+const OFFICIAL_GITHUB_DOMAINS = [
+  "github.com",
+  "githubstatus.com"
+];
 const TRUSTTRACE_BRAND_TERMS = [
   "apple",
   "apple id",
@@ -684,15 +688,36 @@ function buildVisibleLinkRecord(link, mode) {
 
 function extractSearchResultUrl(link) {
   try {
-    const hrefUrl = new URL(link.href);
-    if (hrefUrl.hostname.endsWith("google.com") && hrefUrl.pathname === "/url") {
-      const redirectedUrl = hrefUrl.searchParams.get("q") || hrefUrl.searchParams.get("url");
-      return redirectedUrl ? new URL(redirectedUrl).href : "";
+    const rawHref = link.getAttribute("href") || link.href || "";
+    const hrefUrl = new URL(rawHref, window.location.href);
+    if (isGoogleRedirectUrl(hrefUrl)) {
+      const redirectedUrl = getRedirectDestination(hrefUrl);
+      if (redirectedUrl) {
+        return new URL(redirectedUrl, window.location.href).href;
+      }
     }
     return hrefUrl.href;
   } catch (error) {
     return "";
   }
+}
+
+function isGoogleRedirectUrl(url) {
+  return (
+    (url.hostname === "google.com" || url.hostname.endsWith(".google.com")) &&
+    ["/url", "/aclk", "/imgres", "/interstitial"].includes(url.pathname)
+  );
+}
+
+function getRedirectDestination(url) {
+  const redirectParams = ["url", "q", "adurl", "imgurl", "imgrefurl"];
+  for (const param of redirectParams) {
+    const value = url.searchParams.get(param);
+    if (value && /^https?:\/\//i.test(value)) {
+      return value;
+    }
+  }
+  return "";
 }
 
 function isSearchResultLink(link, targetUrl) {
@@ -878,18 +903,19 @@ async function analyzeSearchResult(targetUrl) {
 }
 
 function updateSearchBadgeFromResult(badge, targetUrl, result) {
-  const level = getSearchBadgeLevel(result);
+  const displayResult = isOfficialGitHubUrl(targetUrl) ? buildOfficialGitHubBadgeResult(result) : result;
+  const level = getSearchBadgeLevel(displayResult);
   const labels = {
-    trusted: `TrustTrace: Trusted ${result?.trust_score ?? ""}`,
-    low: `TrustTrace: Trusted ${result?.trust_score ?? ""}`,
-    caution: `TrustTrace: Caution ${result?.trust_score ?? ""}`,
-    high: `TrustTrace: High Risk ${result?.trust_score ?? ""}`
+    trusted: `TrustTrace: Trusted ${displayResult?.trust_score ?? ""}`,
+    low: `TrustTrace: Trusted ${displayResult?.trust_score ?? ""}`,
+    caution: `TrustTrace: Caution ${displayResult?.trust_score ?? ""}`,
+    high: `TrustTrace: High Risk ${displayResult?.trust_score ?? ""}`
   };
 
   updateSearchBadge(badge, {
     label: labels[level],
     level,
-    title: buildSearchBadgeTitle(result)
+    title: buildSearchBadgeTitle(displayResult)
   });
 
   if (level === "high") {
@@ -902,11 +928,37 @@ function updateSearchBadgeFromResult(badge, targetUrl, result) {
       chrome.runtime.sendMessage({
         type: "TRUSTTRACE_OPEN_WARNING_FOR_URL",
         url: targetUrl,
-        result
+        result: displayResult
       });
     });
   }
 }
+
+function isOfficialGitHubUrl(url) {
+  try {
+    const hostname = new URL(url).hostname.toLowerCase();
+    return OFFICIAL_GITHUB_DOMAINS.some((domain) => hostname === domain || hostname.endsWith(`.${domain}`));
+  } catch (error) {
+    return false;
+  }
+}
+
+function buildOfficialGitHubBadgeResult(result = {}) {
+  const trustScore = Math.max(Number(result?.trust_score || 0), 95);
+  return {
+    ...result,
+    risk_level: "low",
+    trust_score: trustScore,
+    phishing_probability: Math.min(Number(result?.phishing_probability ?? 0.05), 0.05),
+    confidence: "high",
+    reasons: [],
+    trust_signals: [
+      "Official GitHub domain detected.",
+      ...(result?.trust_signals || [])
+    ]
+  };
+}
+
 
 function getSearchBadgeLevel(result) {
   return classifyLinkRisk(result).level;

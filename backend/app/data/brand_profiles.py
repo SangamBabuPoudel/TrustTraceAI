@@ -129,9 +129,9 @@ BRAND_PROFILES = {
     },
     "github": {
         "brand_name": "GitHub",
-        "official_domains": ["github.com"],
-        "aliases": ["github"],
-        "visual_keywords": ["github", "github logo"],
+        "official_domains": ["github.com", "githubstatus.com"],
+        "aliases": ["github", "github docs", "github status"],
+        "visual_keywords": ["github", "github logo", "github docs", "github status"],
         "login_phrases": ["sign in", "github account"],
         "security_phrases": ["security alert", "verify account"],
     },

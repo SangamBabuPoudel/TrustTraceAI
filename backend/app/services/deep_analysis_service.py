@@ -37,6 +37,7 @@ KNOWN_BRAND_ROOTS = {
     "chatgpt",
     "claude",
     "gemini",
+    "github",
 }
 
 HOMOGLYPH_MAP = {
