@@ -22,6 +22,12 @@ OFFICIAL_SAFE_CASES = [
     "https://chatgpt.com",
     "https://claude.ai",
     "https://gemini.google.com",
+    "https://www.usf.edu",
+    "https://my.usf.edu",
+    "https://login.microsoftonline.com",
+    "https://login.live.com",
+    "https://www.microsoft.com",
+    "https://office.com",
     "https://github.com",
     "https://github.com/login",
     "https://github.com/apps/desktop",
@@ -39,6 +45,10 @@ FAKE_RISKY_CASES = [
     "http://github-login-security.example.com/verify",
     "https://githhub-login.example.com",
     "https://github-security-verify.xyz/login",
+    "http://microsoft-login-security.example.com/verify",
+    "https://usf-login-security.example.com/login",
+    "https://usf.edu.login.example.com",
+    "https://microsoft-authenticator-verify.xyz/login",
 ]
 
 

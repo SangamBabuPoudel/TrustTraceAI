@@ -584,7 +584,7 @@ function scanVisibleSearchResults() {
   })).filter((result) => result.link);
 
   results.forEach(({ link, targetUrl }) => {
-    if (link.getAttribute(SEARCH_RESULT_ATTRIBUTE) === targetUrl && hasSearchResultBadge(link, targetUrl)) {
+    if (link.getAttribute(SEARCH_RESULT_ATTRIBUTE) === targetUrl) {
       return;
     }
 
@@ -763,15 +763,6 @@ function attachSearchResultBadge(link, targetUrl) {
   wrapper.appendChild(badge);
   insertionTarget.insertAdjacentElement("afterend", wrapper);
   return badge;
-}
-
-function hasSearchResultBadge(link, targetUrl) {
-  const insertionTarget = getSearchBadgeInsertionTarget(link);
-  return Boolean(
-    insertionTarget.parentElement?.querySelector(
-      `.${SEARCH_BADGE_WRAP_CLASS}[data-trusttrace-url="${cssEscape(targetUrl)}"] .${SEARCH_BADGE_CLASS}`
-    )
-  );
 }
 
 function injectSearchBadgeStyles() {

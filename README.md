@@ -288,3 +288,27 @@ Future:
 - Built TrustTrace AI, a Chrome Extension MV3 and FastAPI cybersecurity tool that detects phishing URLs, fake login forms, scam messages, sender impersonation, suspicious links, and repeated campaign patterns with explainable risk scoring.
 - Designed a multi-layer threat pipeline combining local reputation checks, URL/domain heuristics, page/form/message analysis, pre-visit warnings, search result annotations, and rule-based attack explanations.
 - Implemented privacy-first browser security workflows including user-controlled message scanning, URL-only pre-visit checks, local SQLite hash-based repeat detection, and no cookie/password collection.
+
+### Search Result Badge Troubleshooting
+
+If the TrustTrace inline score does not appear under Google search results, check browser extensions first.
+
+Some ad blockers, privacy extensions, or script blockers may hide or block injected UI elements on search pages.
+
+To test:
+
+1. Temporarily disable ad blockers or privacy/script-blocking extensions.
+2. Reload the Google search results page.
+3. Reload TrustTrace AI from `chrome://extensions`.
+4. Search again, for example:
+   - `github`
+   - `apple login`
+   - `openai`
+
+Expected result:
+
+`TrustTrace: Trusted 95`
+
+or another TrustTrace score badge should appear under search results.
+
+If the badge appears after disabling the ad blocker, TrustTrace AI is working correctly. The issue is caused by another extension blocking or modifying the search-result page.

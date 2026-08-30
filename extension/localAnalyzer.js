@@ -7,7 +7,14 @@ const SUSPICIOUS_KEYWORDS = [
 ];
 const CREDENTIAL_CONTEXT = [
   "login", "sign in", "signin", "verify", "account", "password", "payment",
-  "billing", "bank", "security", "secure", "update", "recovery", "otp", "code"
+  "billing", "bank", "security", "secure", "update", "recovery", "otp", "code",
+  "verification", "authenticator", "authentication", "mfa", "2fa", "redirect",
+  "single sign-on", "sso", "saml", "oauth", "device"
+];
+const AUTHENTICATION_CONTEXT = [
+  "login", "sign in", "signin", "password", "verify", "verification",
+  "authenticator", "authentication", "mfa", "2fa", "otp", "security code",
+  "account", "redirect", "single sign-on", "sso", "saml", "oauth", "device"
 ];
 const SUSPICIOUS_TLDS = [
   ".xyz", ".top", ".click", ".work", ".zip", ".country", ".stream", ".gq",
@@ -21,7 +28,21 @@ const LOCAL_BLOCKLIST_URLS = [
   "https://gemini-google-verify-account.xyz/login",
   "http://github-login-security.example.com/verify",
   "https://github-security-verify.xyz/login",
-  "https://githhub-login.example.com"
+  "https://githhub-login.example.com",
+  "http://microsoft-login-security.example.com/verify",
+  "https://microsoftonline-login-verify.example.com",
+  "https://google-authenticator-verify.example.com",
+  "https://accounts-google-login.example.com",
+  "https://appleid-verify-login.example.com",
+  "https://usf-login-security.example.com/login",
+  "https://usf.edu.login.example.com",
+  "https://login-microsoftonline.example.com",
+  "https://microsoft-authenticator-verify.xyz/login",
+  "https://okta-login-security.example.com",
+  "https://duo-security-login.example.com",
+  "https://microsoftonline.com.login.example.com",
+  "https://accounts.google.com.verify.example.com",
+  "https://github.com.login.example.com"
 ];
 const LOCAL_BLOCKLIST_DOMAINS = [
   "apple-login-security.example.com",
@@ -30,18 +51,42 @@ const LOCAL_BLOCKLIST_DOMAINS = [
   "gemini-google-verify-account.xyz",
   "github-login-security.example.com",
   "github-security-verify.xyz",
-  "githhub-login.example.com"
+  "githhub-login.example.com",
+  "microsoft-login-security.example.com",
+  "microsoftonline-login-verify.example.com",
+  "google-authenticator-verify.example.com",
+  "accounts-google-login.example.com",
+  "appleid-verify-login.example.com",
+  "usf-login-security.example.com",
+  "usf.edu.login.example.com",
+  "login-microsoftonline.example.com",
+  "microsoft-authenticator-verify.xyz",
+  "okta-login-security.example.com",
+  "duo-security-login.example.com",
+  "microsoftonline.com.login.example.com",
+  "accounts.google.com.verify.example.com",
+  "github.com.login.example.com"
 ];
 const TRUSTED_BRANDS = {
-  apple: ["apple.com"],
-  google: ["google.com", "youtube.com"],
+  apple: ["apple.com", "icloud.com"],
+  google: ["google.com", "youtube.com", "gstatic.com", "googleusercontent.com"],
   gemini: ["google.com"],
   youtube: ["youtube.com", "google.com"],
   openai: ["openai.com", "chatgpt.com"],
   chatgpt: ["chatgpt.com", "openai.com"],
   anthropic: ["anthropic.com"],
   claude: ["claude.ai", "anthropic.com"],
-  microsoft: ["microsoft.com", "live.com", "office.com"],
+  microsoft: [
+    "microsoft.com", "microsoftonline.com", "live.com", "office.com",
+    "office365.com", "outlook.com", "msftauth.net", "msauth.net",
+    "msauthimages.net", "msftauthimages.net", "microsoftauthenticator.com",
+    "azure.com", "azureedge.net"
+  ],
+  usf: ["usf.edu"],
+  duo: ["duosecurity.com"],
+  okta: ["okta.com", "oktacdn.com", "okta-emea.com", "okta-preview.com"],
+  auth0: ["auth0.com"],
+  cloudflare: ["cloudflare.com", "cloudflareaccess.com"],
   amazon: ["amazon.com"],
   paypal: ["paypal.com"],
   netflix: ["netflix.com"],
@@ -53,13 +98,39 @@ const TRUSTED_BRANDS = {
   usps: ["usps.com"],
   dhl: ["dhl.com"],
   fedex: ["fedex.com"],
-  github: ["github.com", "githubstatus.com"],
+  github: ["github.com", "githubusercontent.com", "githubassets.com", "githubstatus.com"],
   wikipedia: ["wikipedia.org"]
 };
+const TRUSTED_AUTH_PROVIDERS = {
+  USF: ["usf.edu"],
+  Microsoft: [
+    "microsoft.com", "microsoftonline.com", "live.com", "office.com",
+    "office365.com", "outlook.com", "msftauth.net", "msauth.net",
+    "msauthimages.net", "msftauthimages.net", "microsoftauthenticator.com",
+    "azure.com", "azureedge.net"
+  ],
+  Google: ["google.com", "gstatic.com", "googleusercontent.com"],
+  Apple: ["apple.com", "icloud.com"],
+  GitHub: ["github.com", "githubusercontent.com", "githubassets.com", "githubstatus.com"],
+  Duo: ["duosecurity.com"],
+  Okta: ["okta.com", "oktacdn.com", "okta-preview.com", "okta-emea.com"],
+  Auth0: ["auth0.com"],
+  Cloudflare: ["cloudflareaccess.com", "cloudflare.com"]
+};
 const HIGH_REPUTATION_DOMAINS = [
-  "apple.com", "www.apple.com", "support.apple.com", "google.com", "www.google.com",
+  "apple.com", "www.apple.com", "support.apple.com", "appleid.apple.com",
+  "idmsa.apple.com", "icloud.com", "www.icloud.com", "google.com", "www.google.com",
+  "accounts.google.com", "myaccount.google.com", "gstatic.com", "googleusercontent.com",
   "youtube.com", "www.youtube.com", "gemini.google.com", "openai.com", "chatgpt.com",
-  "claude.ai", "anthropic.com", "microsoft.com", "amazon.com", "github.com",
+  "claude.ai", "anthropic.com", "usf.edu", "www.usf.edu", "my.usf.edu",
+  "netid.usf.edu", "login.microsoftonline.com", "microsoftonline.com",
+  "login.live.com", "microsoft.com", "www.microsoft.com", "office.com",
+  "www.office.com", "office365.com", "outlook.com", "outlook.office.com", "aadcdn.msftauth.net",
+  "aadcdn.msauth.net", "msftauth.net", "msauth.net", "microsoftauthenticator.com", "duosecurity.com",
+  "msauthimages.net", "msftauthimages.net", "azure.com", "azureedge.net",
+  "api.duosecurity.com", "okta.com", "oktacdn.com", "okta-emea.com",
+  "okta-preview.com", "auth0.com", "cdn.auth0.com", "cloudflare.com",
+  "www.cloudflare.com", "cloudflareaccess.com", "microsoft.com", "amazon.com", "github.com",
   "www.github.com", "gist.github.com", "docs.github.com", "support.github.com",
   "githubstatus.com", "www.githubstatus.com", "wikipedia.org", "verizon.com",
   "www.verizon.com", "bestbuy.com", "www.bestbuy.com", "walmart.com", "www.walmart.com",
@@ -245,11 +316,21 @@ function analyzeMessage(payload = {}) {
 function analyzeReputation(parsed) {
   const hostname = parsed.hostname.toLowerCase();
   const urlText = `${hostname} ${parsed.pathname} ${parsed.search}`.toLowerCase();
+  const authContext = detectAuthenticationContext(parsed);
+  const authProvider = getOfficialAuthProvider(hostname);
   const trustSignals = [];
   const warnings = [];
   let matchedBrand = "";
   let officialDomain = "";
   let isOfficial = false;
+
+  if (authProvider) {
+    trustSignals.push("Official authentication provider detected.");
+    if (authContext.has_authentication_context) {
+      trustSignals.push("Login/authentication wording is expected on this trusted domain.");
+    }
+    trustSignals.push("No strong phishing indicators found.");
+  }
 
   for (const [brand, domains] of Object.entries(TRUSTED_BRANDS)) {
     const official = domains.find((domain) => isDomainOrSubdomain(hostname, domain));
@@ -266,7 +347,11 @@ function analyzeReputation(parsed) {
       if (isTrustedCommerce(hostname) && containsAny(urlText, PRODUCT_CONTEXT) && !containsAny(urlText, CREDENTIAL_CONTEXT)) {
         trustSignals.push(`Trusted commerce domain detected; ${formatBrand(brand)} appears in product listing context.`);
       } else if (hasSuspiciousBrandContext(hostname, urlText, brand)) {
-        warnings.push(`${formatBrand(brand)} brand keyword appears outside the official ${domains[0]} domain in a login/security context.`);
+        warnings.push(
+          authContext.has_authentication_context
+            ? `${formatBrand(brand)} brand/login domain mismatch detected. Authentication wording appears on an untrusted or lookalike domain.`
+            : `${formatBrand(brand)} brand keyword appears outside the official ${domains[0]} domain in a login/security context.`
+        );
       }
     }
   }
@@ -279,6 +364,9 @@ function analyzeReputation(parsed) {
   return {
     hostname,
     is_official_brand_domain: isOfficial,
+    is_official_auth_provider: Boolean(authProvider),
+    official_auth_provider: authProvider || "",
+    has_authentication_context: authContext.has_authentication_context,
     matched_brand: matchedBrand,
     official_domain: officialDomain,
     is_high_reputation_domain: isHighReputation,
@@ -286,6 +374,30 @@ function analyzeReputation(parsed) {
     trust_signals: dedupe(trustSignals),
     reputation_warnings: warnings
   };
+}
+
+function detectAuthenticationContext(parsed, textSignals = []) {
+  const text = [
+    parsed?.hostname || "",
+    parsed?.pathname || "",
+    parsed?.search || "",
+    ...textSignals
+  ].join(" ").toLowerCase();
+
+  return {
+    has_authentication_context: containsAny(text, AUTHENTICATION_CONTEXT),
+    matched_terms: AUTHENTICATION_CONTEXT.filter((term) => text.includes(term))
+  };
+}
+
+function getOfficialAuthProvider(hostname) {
+  const normalizedHostname = normalizeHostname(hostname);
+  for (const [provider, domains] of Object.entries(TRUSTED_AUTH_PROVIDERS)) {
+    if (domains.some((domain) => isDomainOrSubdomain(normalizedHostname, domain))) {
+      return provider;
+    }
+  }
+  return "";
 }
 
 function analyzeText(text, source) {
@@ -307,6 +419,7 @@ function analyzeText(text, source) {
 
 function analyzeForms(forms, pageUrl, contentScore, urlResult) {
   const parsed = parseUrl(pageUrl);
+  const isTrustedAuthPage = Boolean(urlResult.reputation?.is_official_auth_provider);
   const reasons = [];
   let score = 0;
   let hasHttpPasswordForm = false;
@@ -314,24 +427,26 @@ function analyzeForms(forms, pageUrl, contentScore, urlResult) {
     const label = `Form ${index + 1}`;
     const submitText = String(form.submit_text || "").toLowerCase();
     if (form.has_password_field) {
-      reasons.push(`${label}: A password field was detected.`);
-      score += 28;
       if (parsed?.protocol === "http:") {
         reasons.push("Password or credential entry was detected on an unencrypted HTTP page.");
         hasHttpPasswordForm = true;
         score += 70;
+      } else if (!isTrustedAuthPage) {
+        reasons.push(`${label}: A password field was detected.`);
+        score += 28;
       }
     }
-    if (form.has_email_or_username_field && form.has_password_field) {
+    if (form.has_email_or_username_field && form.has_password_field && !isTrustedAuthPage) {
       reasons.push(`${label}: The form asks for both an email or username and a password.`);
       score += 25;
     }
-    if (!form.action) {
+    if (!form.action && !isTrustedAuthPage) {
       reasons.push(`${label}: The form action is missing, which can make destination behavior unclear.`);
       score += 12;
     } else if (parsed) {
       const action = parseUrl(form.action, parsed.href);
-      if (action && action.hostname && action.hostname !== parsed.hostname) {
+      const trustedAction = action?.hostname && getOfficialAuthProvider(action.hostname);
+      if (action && action.hostname && action.hostname !== parsed.hostname && !trustedAction && !isTrustedAuthPage) {
         reasons.push(`${label}: The login form submits data to a different domain than the current page.`);
         score += 35;
       }
@@ -340,7 +455,7 @@ function analyzeForms(forms, pageUrl, contentScore, urlResult) {
         score += 35;
       }
     }
-    if (/(verify|confirm|update|unlock|secure|continue)/.test(submitText)) {
+    if (/(verify|confirm|update|unlock|secure|continue)/.test(submitText) && !isTrustedAuthPage) {
       reasons.push(`${label}: The submit button uses verification or account-security wording.`);
       score += 18;
     }
@@ -348,7 +463,7 @@ function analyzeForms(forms, pageUrl, contentScore, urlResult) {
       reasons.push(`${label}: The form contains several hidden inputs.`);
       score += 10;
     }
-    if (form.has_password_field && contentScore >= 45) {
+    if (form.has_password_field && contentScore >= 45 && !isTrustedAuthPage) {
       reasons.push(`${label}: A password field was detected on a page with suspicious account-verification or security-alert language.`);
       score += 35;
     }
@@ -549,6 +664,17 @@ function isTrustedCommerce(hostname) {
   return TRUSTED_COMMERCE_DOMAINS.some((domain) => isDomainOrSubdomain(hostname, domain));
 }
 
+function normalizeHostname(value) {
+  try {
+    const hostname = String(value || "").includes("://")
+      ? new URL(value).hostname
+      : String(value || "");
+    return hostname.toLowerCase().replace(/^www\./, "");
+  } catch (error) {
+    return "";
+  }
+}
+
 function isDomainOrSubdomain(hostname, domain) {
   return hostname === domain || hostname.endsWith(`.${domain}`);
 }
@@ -572,14 +698,17 @@ function riskPoints(result) {
 function normalizeReputation(reputation = {}) {
   return {
     is_official_brand_domain: Boolean(reputation.is_official_brand_domain),
+    is_official_auth_provider: Boolean(reputation.is_official_auth_provider),
     is_high_reputation_domain: Boolean(reputation.is_high_reputation_domain),
     matched_brand: reputation.matched_brand || "",
+    official_auth_provider: reputation.official_auth_provider || "",
+    has_authentication_context: Boolean(reputation.has_authentication_context),
     reputation_score: Number(reputation.reputation_score || 0)
   };
 }
 
 function formatBrand(brand) {
-  const names = { openai: "OpenAI", chatgpt: "ChatGPT", github: "GitHub", usps: "USPS", dhl: "DHL", fedex: "FedEx", bankofamerica: "Bank of America", wellsfargo: "Wells Fargo" };
+  const names = { openai: "OpenAI", chatgpt: "ChatGPT", github: "GitHub", usf: "USF", duo: "Duo", usps: "USPS", dhl: "DHL", fedex: "FedEx", bankofamerica: "Bank of America", wellsfargo: "Wells Fargo" };
   return names[brand] || `${brand.charAt(0).toUpperCase()}${brand.slice(1)}`;
 }
 

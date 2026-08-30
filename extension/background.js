@@ -27,7 +27,7 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
     return;
   }
 
-  const cachedResult = isOfficialGitHubUrl(targetUrl) ? null : await getCachedHighRiskResult(targetUrl);
+  const cachedResult = await shouldIgnoreHighRiskCache(targetUrl) ? null : await getCachedHighRiskResult(targetUrl);
   if (cachedResult) {
     await TrustTraceSecurityStats.recordWarningBlock(cachedResult);
     await redirectToWarning(tabId, targetUrl, cachedResult);
@@ -155,8 +155,10 @@ async function analyzeUrl(url) {
 }
 
 async function analyzeSearchResultUrl(url) {
-  if (isOfficialGitHubUrl(url)) {
-    return normalizeOfficialGitHubResult(await analyzeUrl(url));
+  const freshResult = await analyzeUrl(url);
+
+  if (isTrustedOfficialResult(freshResult)) {
+    return isOfficialGitHubUrl(url) ? normalizeOfficialGitHubResult(freshResult) : freshResult;
   }
 
   const cachedResult = await getCachedHighRiskResult(url);
@@ -164,11 +166,28 @@ async function analyzeSearchResultUrl(url) {
     return cachedResult;
   }
 
-  const result = await analyzeUrl(url);
+  const result = freshResult;
   if (isHighRisk(result)) {
     await cacheHighRiskResult(url, result);
   }
   return result;
+}
+
+async function shouldIgnoreHighRiskCache(url) {
+  const result = await analyzeUrl(url);
+  return isTrustedOfficialResult(result);
+}
+
+function isTrustedOfficialResult(result) {
+  return Boolean(
+    result?.risk_level === "low" &&
+    Number(result?.trust_score) >= 85 &&
+    (
+      result?.reputation?.is_official_auth_provider ||
+      result?.reputation?.is_official_brand_domain ||
+      result?.reputation?.is_high_reputation_domain
+    )
+  );
 }
 
 function isOfficialGitHubUrl(url) {
