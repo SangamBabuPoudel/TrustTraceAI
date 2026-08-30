@@ -189,17 +189,29 @@ function analyzeUrl(input) {
     const suspiciousTld = SUSPICIOUS_TLDS.find((tld) => hostname.endsWith(tld));
     const hyphenCount = (hostname.match(/-/g) || []).length;
     const subdomainCount = Math.max(hostname.split(".").filter(Boolean).length - 2, 0);
+    const isIpHostname = /^(?:\d{1,3}\.){3}\d{1,3}$/.test(hostname);
 
     if (parsed.protocol === "http:") addSignal("The page uses HTTP instead of encrypted HTTPS.", 25);
     if (keywordHits.length) addSignal(`The URL contains phishing-related keyword(s): ${keywordHits.slice(0, 5).join(", ")}.`, 18);
-    if (/^(?:\d{1,3}\.){3}\d{1,3}$/.test(hostname)) addSignal("The URL uses an IP address instead of a normal domain name.", 25);
+    if (isIpHostname) addSignal("The URL uses an IP address instead of a normal domain name.", hasCredentialContext ? 75 : 25);
     if (hyphenCount >= 3) addSignal("The domain contains excessive hyphens, which can be used to imitate trusted domains.", 18);
     if (subdomainCount >= 3) addSignal("The URL contains many subdomains, which can mimic trusted sites.", 15);
-    if (normalizedUrl.includes("@")) addSignal("The URL contains an @ symbol, which can hide the real destination.", 25);
+    if (parsed.username || parsed.password || normalizedUrl.includes("@")) {
+      addSignal("The URL contains an @ symbol or userinfo section, which can hide the real destination.", hasCredentialContext ? 75 : 35);
+    }
+    if (hostname.split(".").some((label) => label.startsWith("xn--"))) {
+      addSignal("The hostname uses punycode, which can hide lookalike characters.", hasCredentialContext ? 75 : 45);
+    }
     if (URL_SHORTENERS.includes(hostname.replace(/^www\./, ""))) addSignal("The URL uses a known link shortener, which can hide the final destination.", 35);
     if (suspiciousTld) addSignal(`The URL uses a suspicious top-level domain (${suspiciousTld}).`, hasCredentialContext ? 75 : 30);
     if (/%[0-9a-f]{2}/i.test(normalizedUrl)) addSignal("The URL contains encoded characters that can obscure its destination.", 10);
     if (parsed.search.length > 80) addSignal("The URL has an unusually long query string.", 10);
+    if (hasCredentialContext && !reputation.reputation_warnings.length) {
+      addSignal("Authentication wording appears on an unknown or untrusted domain.", 25);
+    }
+    if (reputation.matched_brand && !reputation.reputation_warnings.length && !isTrustedCommerce(hostname)) {
+      addSignal("A trusted brand name appears outside its official domain.", 10);
+    }
     if (reputation.reputation_warnings.length) {
       reasons.push(...reputation.reputation_warnings);
       urlSignals.push(...reputation.reputation_warnings);
