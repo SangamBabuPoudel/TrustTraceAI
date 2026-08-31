@@ -2,6 +2,18 @@
 
 An explainable browser security extension that detects phishing websites, suspicious links, fake login forms, scam messages, and brand impersonation using layered risk scoring and real-time warnings.
 
+## Project Versions
+
+TrustTrace AI has two active versions:
+
+### `main` — Portfolio / Development Version
+The `main` branch contains the full GitHub portfolio version of TrustTrace AI, including the Chrome Extension, FastAPI backend, documentation, demo assets, and future machine-learning/API integration placeholders.
+
+### `chrome-store-release` — Chrome Web Store Version
+The `chrome-store-release` branch contains the privacy-focused Chrome Web Store v1.0.0 build. This version is local-first and does not require a FastAPI server or `127.0.0.1:8000` backend. Core URL and phishing analysis runs inside the packaged Chrome extension through `extension/localAnalyzer.js`.
+
+The Chrome Web Store version does not send browsing URLs, page content, message content, clipboard content, passwords, cookies, or tokens to a TrustTrace server.
+
 ## Problem Statement
 
 Many phishing defenses rely on simple blocklists or single-signal checks. That approach can miss newer scams, and it can also create false positives when a legitimate website uses normal login, account, or form language.
@@ -14,7 +26,7 @@ This is a local MVP portfolio project. External threat intelligence APIs and mac
 
 | Feature | What it does |
 |---|---|
-| Real-time URL risk scoring | Scores URLs through a local FastAPI backend. |
+| Real-time URL risk scoring | Scores URLs using browser-local analysis in the Chrome Web Store build, with FastAPI retained in the portfolio branch for development and future enhanced analysis. |
 | Trust score and phishing probability | Returns `trust_score`, `phishing_probability`, and `risk_level`. |
 | Official domain/reputation layer | Reduces false positives for trusted domains like Apple, OpenAI, Google, and Microsoft. |
 | Trusted commerce context | Allows trusted retailers/carriers to mention brands in product listings without false brand-impersonation warnings. |
@@ -36,23 +48,31 @@ This is a local MVP portfolio project. External threat intelligence APIs and mac
 | Personal Adaptive Trust | Optional local domain-level learning that uses safe scan history and user feedback to make small trust adjustments only on the current user's browser. |
 | Privacy-first design | Local backend, no cookies/password collection, user-controlled message scans, resettable local stats. |
 
+
 ## Architecture Overview
 
 ```text
+Chrome Web Store v1.0.0:
 Chrome Extension
   popup UI | content script | service worker
+        |
+        v
+Browser-local Analyzer
+  extension/localAnalyzer.js
+        |
+        v
+Trust Score | Warning Page | Caution Banner | Search Badges
+
+Portfolio / future enhanced version:
+Chrome Extension
         |
         v
 FastAPI Backend
         |
         v
 Multi-Layer Threat Scoring Pipeline
-        |
-        v
-Popup Dashboard | Warning Page | Caution Banner | Search Badges
 ```
 
-The extension collects only the data needed for the selected workflow. The backend applies rule-based scoring and returns explainable risk results. The UI then displays the trust score, grouped signals, and attack explanation.
 
 ## Multi-Layer Detection Pipeline
 
