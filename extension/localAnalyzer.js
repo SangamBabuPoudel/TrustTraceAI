@@ -9,12 +9,16 @@ const CREDENTIAL_CONTEXT = [
   "login", "sign in", "signin", "verify", "account", "password", "payment",
   "billing", "bank", "security", "secure", "update", "recovery", "otp", "code",
   "verification", "authenticator", "authentication", "mfa", "2fa", "redirect",
-  "single sign-on", "sso", "saml", "oauth", "device"
+  "single sign-on", "sso", "saml", "oauth", "oidc", "authorize", "device",
+  "redirect_uri", "client_id", "response_type", "relaystate", "samlrequest"
 ];
 const AUTHENTICATION_CONTEXT = [
   "login", "sign in", "signin", "password", "verify", "verification",
   "authenticator", "authentication", "mfa", "2fa", "otp", "security code",
-  "account", "redirect", "single sign-on", "sso", "saml", "oauth", "device"
+  "account", "redirect", "single sign-on", "sso", "saml", "oauth", "oidc",
+  "authorize", "device", "session", "redirect_uri", "client_id",
+  "response_type", "scope", "state", "nonce", "tenant", "relaystate",
+  "samlrequest"
 ];
 const SUSPICIOUS_TLDS = [
   ".xyz", ".top", ".click", ".work", ".zip", ".country", ".stream", ".gq",
@@ -42,7 +46,8 @@ const LOCAL_BLOCKLIST_URLS = [
   "https://duo-security-login.example.com",
   "https://microsoftonline.com.login.example.com",
   "https://accounts.google.com.verify.example.com",
-  "https://github.com.login.example.com"
+  "https://github.com.login.example.com",
+  "https://auth0-login-verify.example.com"
 ];
 const LOCAL_BLOCKLIST_DOMAINS = [
   "apple-login-security.example.com",
@@ -65,7 +70,8 @@ const LOCAL_BLOCKLIST_DOMAINS = [
   "duo-security-login.example.com",
   "microsoftonline.com.login.example.com",
   "accounts.google.com.verify.example.com",
-  "github.com.login.example.com"
+  "github.com.login.example.com",
+  "auth0-login-verify.example.com"
 ];
 const TRUSTED_BRANDS = {
   apple: ["apple.com", "icloud.com"],
@@ -80,12 +86,12 @@ const TRUSTED_BRANDS = {
     "microsoft.com", "microsoftonline.com", "live.com", "office.com",
     "office365.com", "outlook.com", "msftauth.net", "msauth.net",
     "msauthimages.net", "msftauthimages.net", "microsoftauthenticator.com",
-    "azure.com", "azureedge.net"
+    "azure.com", "azureedge.net", "windows.net", "cloud.microsoft"
   ],
   usf: ["usf.edu"],
-  duo: ["duosecurity.com"],
+  duo: ["duosecurity.com", "duo.com"],
   okta: ["okta.com", "oktacdn.com", "okta-emea.com", "okta-preview.com"],
-  auth0: ["auth0.com"],
+  auth0: ["auth0.com", "auth0cdn.com"],
   cloudflare: ["cloudflare.com", "cloudflareaccess.com"],
   amazon: ["amazon.com"],
   paypal: ["paypal.com"],
@@ -107,15 +113,20 @@ const TRUSTED_AUTH_PROVIDERS = {
     "microsoft.com", "microsoftonline.com", "live.com", "office.com",
     "office365.com", "outlook.com", "msftauth.net", "msauth.net",
     "msauthimages.net", "msftauthimages.net", "microsoftauthenticator.com",
-    "azure.com", "azureedge.net"
+    "azure.com", "azureedge.net", "windows.net", "cloud.microsoft"
   ],
   Google: ["google.com", "gstatic.com", "googleusercontent.com"],
   Apple: ["apple.com", "icloud.com"],
   GitHub: ["github.com", "githubusercontent.com", "githubassets.com", "githubstatus.com"],
-  Duo: ["duosecurity.com"],
+  Duo: ["duosecurity.com", "duo.com"],
   Okta: ["okta.com", "oktacdn.com", "okta-preview.com", "okta-emea.com"],
-  Auth0: ["auth0.com"],
+  Auth0: ["auth0.com", "auth0cdn.com"],
   Cloudflare: ["cloudflareaccess.com", "cloudflare.com"]
+  ,OneLogin: ["onelogin.com"]
+  ,Ping: ["pingidentity.com", "pingone.com"]
+  ,SailPoint: ["sailpoint.com"]
+  ,Salesforce: ["salesforce.com", "force.com"]
+  ,Instructure: ["instructure.com", "canvaslms.com"]
 };
 const HIGH_REPUTATION_DOMAINS = [
   "apple.com", "www.apple.com", "support.apple.com", "appleid.apple.com",
@@ -127,10 +138,12 @@ const HIGH_REPUTATION_DOMAINS = [
   "login.live.com", "microsoft.com", "www.microsoft.com", "office.com",
   "www.office.com", "office365.com", "outlook.com", "outlook.office.com", "aadcdn.msftauth.net",
   "aadcdn.msauth.net", "msftauth.net", "msauth.net", "microsoftauthenticator.com", "duosecurity.com",
-  "msauthimages.net", "msftauthimages.net", "azure.com", "azureedge.net",
+  "msauthimages.net", "msftauthimages.net", "azure.com", "azureedge.net", "windows.net", "cloud.microsoft",
   "api.duosecurity.com", "okta.com", "oktacdn.com", "okta-emea.com",
-  "okta-preview.com", "auth0.com", "cdn.auth0.com", "cloudflare.com",
+  "okta-preview.com", "auth0.com", "cdn.auth0.com", "auth0cdn.com", "duo.com", "cloudflare.com",
   "www.cloudflare.com", "cloudflareaccess.com", "microsoft.com", "amazon.com", "github.com",
+  "onelogin.com", "pingidentity.com", "pingone.com", "sailpoint.com",
+  "salesforce.com", "force.com", "instructure.com", "canvaslms.com",
   "www.github.com", "gist.github.com", "docs.github.com", "support.github.com",
   "githubstatus.com", "www.githubstatus.com", "wikipedia.org", "verizon.com",
   "www.verizon.com", "bestbuy.com", "www.bestbuy.com", "walmart.com", "www.walmart.com",
@@ -178,7 +191,7 @@ function analyzeUrl(input) {
     points = 100;
   } else if (reputation.is_official_brand_domain && reputation.matched_brand === "github") {
     return trustedOfficialResult(normalizedUrl, reputation, "Official GitHub domain detected.");
-  } else if (reputation.is_official_brand_domain || reputation.is_high_reputation_domain) {
+  } else if (reputation.is_official_auth_provider || reputation.is_official_brand_domain || reputation.is_high_reputation_domain) {
     points = parsed.protocol === "http:" ? 20 : 3;
     if (parsed.protocol === "http:") {
       reasons.push("The page uses HTTP instead of encrypted HTTPS.");
@@ -207,7 +220,7 @@ function analyzeUrl(input) {
     if (/%[0-9a-f]{2}/i.test(normalizedUrl)) addSignal("The URL contains encoded characters that can obscure its destination.", 10);
     if (parsed.search.length > 80) addSignal("The URL has an unusually long query string.", 10);
     if (hasCredentialContext && !reputation.reputation_warnings.length) {
-      addSignal("Authentication wording appears on an unknown or untrusted domain.", 25);
+      addSignal("Authentication wording appears on an unknown or untrusted domain.", 30);
     }
     if (reputation.matched_brand && !reputation.reputation_warnings.length && !isTrustedCommerce(hostname)) {
       addSignal("A trusted brand name appears outside its official domain.", 10);
@@ -330,6 +343,7 @@ function analyzeReputation(parsed) {
   const urlText = `${hostname} ${parsed.pathname} ${parsed.search}`.toLowerCase();
   const authContext = detectAuthenticationContext(parsed);
   const authProvider = getOfficialAuthProvider(hostname);
+  const referenceContext = isReferenceOrDiscussionPage(hostname, urlText);
   const trustSignals = [];
   const warnings = [];
   let matchedBrand = "";
@@ -358,6 +372,8 @@ function analyzeReputation(parsed) {
       officialDomain = domains[0];
       if (isTrustedCommerce(hostname) && containsAny(urlText, PRODUCT_CONTEXT) && !containsAny(urlText, CREDENTIAL_CONTEXT)) {
         trustSignals.push(`Trusted commerce domain detected; ${formatBrand(brand)} appears in product listing context.`);
+      } else if (referenceContext && !brandAppears(hostname, brand)) {
+        trustSignals.push("Page appears to discuss an authentication URL rather than impersonate it.");
       } else if (hasSuspiciousBrandContext(hostname, urlText, brand)) {
         warnings.push(
           authContext.has_authentication_context
@@ -388,6 +404,39 @@ function analyzeReputation(parsed) {
   };
 }
 
+function isReferenceOrDiscussionPage(hostname, urlText) {
+  const referenceHosts = [
+    "community.broadcom.com",
+    "1password.community",
+    "reddit.com",
+    "stackoverflow.com",
+    "superuser.com",
+    "serverfault.com",
+    "learn.microsoft.com",
+    "docs.microsoft.com",
+    "support.microsoft.com",
+    "community.cloudflare.com",
+    "support.google.com",
+    "discussions.apple.com"
+  ];
+  const referencePathTerms = [
+    "discussion",
+    "article",
+    "help",
+    "question",
+    "blog",
+    "docs",
+    "community",
+    "support",
+    "comments"
+  ];
+
+  return (
+    referenceHosts.some((domain) => isExactOrSubdomain(hostname, domain)) ||
+    containsAny(urlText, referencePathTerms)
+  );
+}
+
 function detectAuthenticationContext(parsed, textSignals = []) {
   const text = [
     parsed?.hostname || "",
@@ -405,7 +454,7 @@ function detectAuthenticationContext(parsed, textSignals = []) {
 function getOfficialAuthProvider(hostname) {
   const normalizedHostname = normalizeHostname(hostname);
   for (const [provider, domains] of Object.entries(TRUSTED_AUTH_PROVIDERS)) {
-    if (domains.some((domain) => isDomainOrSubdomain(normalizedHostname, domain))) {
+    if (domains.some((domain) => isExactOrSubdomain(normalizedHostname, domain))) {
       return provider;
     }
   }
@@ -665,7 +714,7 @@ function detectLookalike(hostname) {
 function hasSuspiciousBrandContext(hostname, urlText, brand) {
   const compactHostname = hostname.replace(/[-_]/g, "");
   const brandInHost = compactHostname.includes(brand.replace(/[-_ ]/g, ""));
-  return containsAny(urlText, CREDENTIAL_CONTEXT) || (brandInHost && (hostname.includes("-") || containsAny(hostname, CREDENTIAL_CONTEXT)));
+  return brandInHost && (containsAny(urlText, CREDENTIAL_CONTEXT) || hostname.includes("-"));
 }
 
 function brandAppears(text, brand) {
@@ -689,6 +738,10 @@ function normalizeHostname(value) {
 
 function isDomainOrSubdomain(hostname, domain) {
   return hostname === domain || hostname.endsWith(`.${domain}`);
+}
+
+function isExactOrSubdomain(hostname, parentDomain) {
+  return isDomainOrSubdomain(hostname, parentDomain);
 }
 
 function containsAny(text, terms) {

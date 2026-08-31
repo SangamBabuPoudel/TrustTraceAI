@@ -14,22 +14,29 @@ const SAFE_URLS = [
   "https://device.login.microsoftonline.com",
   "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
   "https://login.microsoftonline.com/example/saml2",
+  "https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=test&redirect_uri=https%3A%2F%2Fmy.usf.edu",
   "https://office.com",
   "https://outlook.office.com",
   "https://myprofile.microsoft.com",
+  "https://m365.cloud.microsoft",
   "https://aadcdn.msftauth.net",
   "https://aadcdn.msauth.net",
   "https://myprofile.microsoft.com",
   "https://accounts.google.com",
   "https://accounts.google.com/signin",
+  "https://accounts.google.com/o/oauth2/v2/auth",
   "https://github.com/login",
   "https://apple.com",
   "https://appleid.apple.com",
   "https://duosecurity.com",
   "https://api-12345.duosecurity.com",
+  "https://duo.com",
   "https://okta.com",
+  "https://example.okta.com",
   "https://auth0.com",
+  "https://example.auth0.com",
   "https://cdn.auth0.com",
+  "https://static.auth0cdn.com",
   "https://cloudflareaccess.com",
   "https://www.cloudflare.com",
   "https://device.login.microsoftonline.com/common/oauth2/authorize",
@@ -59,7 +66,6 @@ const HIGH_RISK_LOOKALIKE_URLS = [
   "https://usf-login-security.example.com",
   "https://okta-login-security.example.com",
   "https://duo-security-login.example.com",
-  "https://example.com/redirect?next=https%3A%2F%2Flogin.microsoftonline.com",
   "https://login.microsoftonline.com.security-check.example",
   "https://device.login.microsoftonline.com.authentication.example",
   "https://accounts.google.com.verify-session.example",
@@ -75,7 +81,9 @@ const HIGH_RISK_LOOKALIKE_URLS = [
   "https://apple-login-security.test/verify",
   "https://openai-login-verify.invalid/password",
   "https://github-security-verify.example/login",
-  "https://paypal-account-update.example/secure"
+  "https://paypal-account-update.example/secure",
+  "https://auth0-login-verify.example.com",
+  "https://device.login.microsoftonline.com.authentication.example"
 ];
 
 const CAUTION_NOT_TRUSTED_URLS = [
@@ -84,7 +92,12 @@ const CAUTION_NOT_TRUSTED_URLS = [
   "https://signin.example/verify",
   "https://a.b.c.d.e.example.com/login",
   "https://bit.ly/example",
-  "https://tinyurl.com/signin"
+  "https://tinyurl.com/signin",
+  "https://example.com/redirect?next=https%3A%2F%2Flogin.microsoftonline.com",
+  "https://community.broadcom.com/discussion/intermediate-certificate-issue-when-connecting-to-httpsloginmicrosoftonlinecom",
+  "https://www.1password.community/better-handling-of-logins-for-login.microsoftonline.com",
+  "https://stackoverflow.com/questions/123/login-microsoftonline",
+  "https://reddit.com/r/microsoft/comments/abc/is_login_microsoftonline_legit"
 ];
 
 test("localAnalyzer is available", () => {
@@ -151,5 +164,23 @@ test("brand text in path or query never creates official trust", () => {
     assert.equal(result.reputation?.is_official_auth_provider, false, `${url} should not be an official auth provider`);
     assert.equal(result.reputation?.is_official_brand_domain, false, `${url} should not be an official brand domain`);
     assert.ok(result.trust_score < 95, `${url} should not receive official-domain trust, got ${result.trust_score}`);
+  }
+});
+
+test("reference pages discussing auth URLs are not high risk", () => {
+  const discussionPages = [
+    "https://community.broadcom.com/discussion/intermediate-certificate-issue-when-connecting-to-httpsloginmicrosoftonlinecom",
+    "https://www.1password.community/better-handling-of-logins-for-login.microsoftonline.com",
+    "https://stackoverflow.com/questions/123/login-microsoftonline",
+    "https://reddit.com/r/microsoft/comments/abc/is_login_microsoftonline_legit"
+  ];
+
+  for (const url of discussionPages) {
+    const result = analyzer.analyzeUrl(url);
+    assert.notEqual(result.risk_level, "high", `${url} should not be high risk`);
+    assert.ok(
+      result.trust_signals?.includes("Page appears to discuss an authentication URL rather than impersonate it."),
+      `${url} should include discussion/reference context`
+    );
   }
 });
