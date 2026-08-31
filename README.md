@@ -25,7 +25,7 @@ This is a local MVP portfolio project. External threat intelligence APIs and mac
 ## Key Features
 
 | Feature | What it does |
-|---|---|
+| ------- | ------------ |
 | Real-time URL risk scoring | Scores URLs using browser-local analysis in the Chrome Web Store build, with FastAPI retained in the portfolio branch for development and future enhanced analysis. |
 | Trust score and phishing probability | Returns `trust_score`, `phishing_probability`, and `risk_level`. |
 | Official domain/reputation layer | Reduces false positives for trusted domains like Apple, OpenAI, Google, and Microsoft. |
@@ -99,25 +99,33 @@ Multi-Layer Threat Scoring Pipeline
 9. Demo Mode
    - Static, clearly labeled sample scenarios for portfolio walkthroughs; no private content scanned and no report-card stats changed.
 10. Personal Adaptive Trust
-   - Opt-in local domain-level metadata for repeated safe scans and user feedback.
-   - Bounded adjustments that cannot override strong phishing, fake login, known-bad, visual clone, or typosquatting evidence.
+    - Opt-in local domain-level metadata for repeated safe scans and user feedback.
+    - Bounded adjustments that cannot override strong phishing, fake login, known-bad, visual clone, or typosquatting evidence.
 11. Future community reputation
-   - Design placeholder for global signals that would require many independent reports, deduplication, rate limits, and abuse checks.
-   - A single user complaint never changes TrustTrace detection for everyone.
+    - Design placeholder for global signals that would require many independent reports, deduplication, rate limits, and abuse checks.
+    - A single user complaint never changes TrustTrace detection for everyone.
 12. Future ML/community learning
-   - Placeholder architecture for URL classifiers, community reports, and richer threat intelligence.
+    - Placeholder architecture for URL classifiers, community reports, and richer threat intelligence.
 
 ## Screenshots
 
-These are placeholders for GitHub portfolio screenshots.
+Screenshot assets can be added in `docs/screenshots/`.
 
-![Popup Dashboard](docs/screenshots/popup-dashboard.png)
-![High-Risk Warning Page](docs/screenshots/high-risk-warning.png)
-![Search Result Badges](docs/screenshots/search-result-badges.png)
-![Universal Link Scan Summary](docs/screenshots/universal-link-scan.png)
-![Email Message Scan Result](docs/screenshots/message-scan-result.png)
-![Attack Explanation Mode](docs/screenshots/attack-explanation-mode.png)
-![Visual Clone Intelligence](docs/screenshots/visual-clone-intelligence.png)
+| Popup Dashboard | High-Risk Warning Page |
+| --------------- | ---------------------- |
+| ![Popup Dashboard](docs/screenshots/popup-dashboard.png) | ![High-Risk Warning Page](docs/screenshots/high-risk-warning.png) |
+
+| Search Result Badges | Universal Link Scan |
+| -------------------- | ------------------- |
+| ![Search Result Badges](docs/screenshots/search-result-badges.png) | ![Universal Link Scan](docs/screenshots/universal-link-scan.png) |
+
+| Email/Message Scan | Attack Explanation Mode |
+| ------------------ | ----------------------- |
+| ![Email/Message Scan](docs/screenshots/message-scan-result.png) | ![Attack Explanation Mode](docs/screenshots/attack-explanation-mode.png) |
+
+| Visual Clone Intelligence |
+| ------------------------- |
+| ![Visual Clone Intelligence](docs/screenshots/visual-clone-intelligence.png) |
 
 ## Tech Stack
 
