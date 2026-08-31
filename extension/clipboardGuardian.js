@@ -56,6 +56,23 @@ function detectSuspiciousUrl(text, urlAnalysisResult = null) {
   }
 
   const signals = [];
+  if (urlAnalysisResult) {
+    if (urlAnalysisResult.risk_level === "high" || Number(urlAnalysisResult.trust_score) <= 30) {
+      signals.push({
+        type: "Suspicious URL",
+        severity: "high",
+        message: "Clipboard URL was rated high risk by TrustTrace URL analysis."
+      });
+    } else if (urlAnalysisResult.risk_level === "medium") {
+      signals.push({
+        type: "Suspicious URL",
+        severity: "medium",
+        message: "Clipboard URL was rated caution by TrustTrace URL analysis."
+      });
+    }
+    return { detected: signals.length > 0, signals };
+  }
+
   try {
     const url = new URL(text);
     const lowerUrl = url.href.toLowerCase();
@@ -80,19 +97,6 @@ function detectSuspiciousUrl(text, urlAnalysisResult = null) {
         type: "Suspicious URL",
         severity: "medium",
         message: "Clipboard URL contains login, account, payment, or verification wording."
-      });
-    }
-    if (urlAnalysisResult?.risk_level === "high" || Number(urlAnalysisResult?.trust_score) <= 30) {
-      signals.push({
-        type: "Suspicious URL",
-        severity: "high",
-        message: "Clipboard URL was rated high risk by TrustTrace URL analysis."
-      });
-    } else if (urlAnalysisResult?.risk_level === "medium") {
-      signals.push({
-        type: "Suspicious URL",
-        severity: "medium",
-        message: "Clipboard URL was rated caution by TrustTrace URL analysis."
       });
     }
   } catch (error) {
