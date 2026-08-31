@@ -1,7 +1,6 @@
 # TrustTrace AI - Explainable AI Browser Security Extension
 
-An explainable browser security extension that detects phishing websites, suspicious links, fake login forms, scam messages, and brand impersonation using layered risk scoring and real-time warnings.
-
+Explainable browser security extension for phishing, scam, fake login, clipboard, and lookalike-domain detection.
 ## Project Versions
 
 TrustTrace AI has two active versions:
